@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "leaf-flow"
+version = "0.1.0"
+description = "LeafFlow: a streamlined API that takes tea from leaf to cart—fast, reliable, easy to extend."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+dependencies = [
+  "asyncpg==0.30.0",
+  "pydantic[email]==2.12.0",
+  "pydantic-settings==2.11.0",
+  "SQLAlchemy==2.0.44",
+  "fastapi==0.118.3",
+  "alembic==1.16.5",
+  "uvicorn==0.37.0",
+  "psycopg2-binary==2.9.11"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/leaf_flow"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
