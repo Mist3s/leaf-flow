@@ -1,5 +1,6 @@
 import uvicorn
 
+
 def main() -> None:
     uvicorn.run(
         "leaf_flow.app:app",
@@ -7,6 +8,7 @@ def main() -> None:
         port=8000,
         reload=True,
     )
+
 
 if __name__ == "__main__":
     main()

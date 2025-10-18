@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
+
 from leaf_flow.infrastructure.db.base import Base
+
 
 class User(Base):
     __tablename__ = "users"

@@ -12,6 +12,7 @@ class UoW:
     async def commit(self): await self.session.commit()
     async def rollback(self): await self.session.rollback()
 
+
 async def get_uow():
     async with AsyncSessionLocal() as s:
         yield UoW(session=s, users=UserRepository(s))
