@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from leaf_flow.api.v1.schemas.users import UserCreate, UserRead
+from leaf_flow.api.v1.app.schemas.users import UserCreate, UserRead
 from leaf_flow.api.deps import uow_dep
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.user_service import create_user

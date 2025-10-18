@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from leaf_flow.api.v1.routers.users import router as users_router
+from leaf_flow.api.v1.app.routers.users import router as users_router
 
 
 def create_app() -> FastAPI:
