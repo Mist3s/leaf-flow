@@ -10,6 +10,15 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
 
+    # --- Безопасность / JWT ---
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_TTL_SECONDS: int = 60 * 15
+    REFRESH_TOKEN_TTL_SECONDS: int = 60 * 60 * 24 * 14
+
+    # --- Telegram ---
+    TELEGRAM_BOT_TOKEN: str
+
     @property
     def database_url(self) -> str:
         return (
