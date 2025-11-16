@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from leaf_flow.infrastructure.db.models.products import Product, ProductVariant, Category
 from leaf_flow.infrastructure.db.repositories.base import Repository
@@ -22,7 +22,7 @@ class ProductRepository(Repository[Product]):
         limit: int,
         offset: int,
     ) -> tuple[int, Sequence[Product]]:
-        stmt = select(Product)
+        stmt = select(Product).options(selectinload(Product.variants))
         if category_slug:
             stmt = stmt.where(Product.category_slug == category_slug)
         if search:
@@ -36,7 +36,7 @@ class ProductRepository(Repository[Product]):
         return total, rows
 
     async def get_with_variants(self, product_id: str) -> Product | None:
-        stmt = select(Product).where(Product.id == product_id)
+        stmt = select(Product).options(selectinload(Product.variants)).where(Product.id == product_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
