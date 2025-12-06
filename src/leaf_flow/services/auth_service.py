@@ -1,6 +1,6 @@
-from datetime import timedelta, timezone
-from uuid import uuid4
-from typing import Any
+import json
+from datetime import timedelta
+from urllib.parse import parse_qsl
 
 from pydantic import BaseModel
 
@@ -12,7 +12,7 @@ from leaf_flow.services.security import (
     verify_telegram_webapp_request,
     create_access_token,
     generate_refresh_token,
-    _utcnow,
+    _utcnow
 )
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.domain.mappers import map_user_model_to_entity
@@ -38,18 +38,15 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
     if not verify_telegram_webapp_request(init_data, settings.TELEGRAM_BOT_TOKEN):
         raise ValueError("INVALID_INIT_DATA")
 
-    # В initData присутствуют serialized telegram fields; парсим минимально
-    # Допускаем, что фронт не модифицирует данные Telegram; полная валидация вне скоупа
-    from urllib.parse import parse_qsl
     data = dict(parse_qsl(init_data))
     user_json = data.get("user")
+
     if not user_json:
         raise ValueError("INVALID_INIT_DATA")
 
-    import json
     tuser = TelegramProfile.model_validate(json.loads(user_json))
-
     user = await uow.users.get_by_telegram_id(tuser.id)
+
     if user is None:
         user = User(
             telegram_id=tuser.id,
@@ -60,16 +57,10 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
             photo_url=tuser.photo_url,
         )
         await uow.users.add(user)
-    else:
-        # Обновляем кэш полей
-        user.first_name = tuser.first_name
-        user.last_name = tuser.last_name
-        user.username = tuser.username
-        user.language_code = tuser.language_code
-        user.photo_url = tuser.photo_url
+        await uow.flush()
 
     # Генерируем токены
-    access_token, access_ttl = create_access_token({"user_id": user.id})
+    access_token, access_ttl = create_access_token(user.id)
     refresh_raw = generate_refresh_token()
     refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
     refresh = RefreshToken(
@@ -103,7 +94,7 @@ async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
         expires_at=_utcnow() + timedelta(seconds=settings.REFRESH_TOKEN_TTL_SECONDS),
     )
     await uow.refresh_tokens.add(new_refresh)
-    access_token, access_ttl = create_access_token({"user_id": user_id})
+    access_token, access_ttl = create_access_token(user.id)
     await uow.commit()
     return AuthTokens(
         accessToken=access_token,

@@ -23,7 +23,7 @@ async def telegram_init(payload: TelegramInitRequest, uow: UoW = Depends(uow_dep
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     resp = AuthResponse(
-        tokens=tokens,
+        tokens=AuthTokens.model_validate(tokens.model_dump()),
         user=UserProfile(
             id=str(user.id),
             telegramId=user.telegram_id,
@@ -43,7 +43,8 @@ async def refresh(payload: dict, uow: UoW = Depends(uow_dep)) -> AuthTokens:
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="refreshToken is required")
     try:
-        return await refresh_tokens(refresh_token, uow)
+        tokens = await refresh_tokens(refresh_token, uow)
+        return AuthTokens.model_validate(tokens.model_dump())
     except PermissionError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 

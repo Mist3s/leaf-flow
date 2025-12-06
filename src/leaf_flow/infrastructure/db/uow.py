@@ -21,6 +21,7 @@ class UoW:
     orders: OrderRepository
     order_items: OrderItemRepository
     refresh_tokens: RefreshTokenRepository
+    async def flush(self): await self.session.flush()
     async def commit(self): await self.session.commit()
     async def rollback(self): await self.session.rollback()
 

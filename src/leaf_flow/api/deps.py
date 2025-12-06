@@ -21,7 +21,7 @@ async def get_current_user(
         payload = decode_access_token(token)
     except Exception:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    user_id = payload.get("sub", {}).get("user_id")
+    user_id = int(payload.get("sub"))
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
     user = await uow.users.get(int(user_id))

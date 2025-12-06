@@ -16,11 +16,11 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_access_token(subject: dict[str, Any], expires_in_seconds: Optional[int] = None) -> tuple[str, int]:
+def create_access_token(user_id: int, expires_in_seconds: Optional[int] = None) -> tuple[str, int]:
     ttl = expires_in_seconds or settings.ACCESS_TOKEN_TTL_SECONDS
     expires_at = _utcnow() + timedelta(seconds=ttl)
     payload = {
-        "sub": subject,
+        "sub": str(user_id),
         "exp": int(expires_at.timestamp()),
         "iat": int(_utcnow().timestamp()),
         "type": "access",

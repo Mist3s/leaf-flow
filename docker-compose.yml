@@ -1,12 +1,42 @@
 volumes:
   pg_data:
+  static_data:
 
 services:
-  db-leaf-flow:
+  db-leaf-flow-stage:
     image: postgres:17
+    container_name: db-leaf-flow-stage
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
       - "5455:5432"
+    restart: always
+
+  leaf-flow-stage:
+    image: mist3s/leaf-flow:stage
+    container_name: leaf-flow-stage
+    restart: always
+    env_file: .env
+    volumes:
+      - static_data:/app/static
+    environment:
+      - STATIC_FILES_PATH=/app/static
+    depends_on:
+      - db-leaf-flow-stage
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  leaf-flow-nginx-stage:
+    image: mist3s/leaf-flow-nginx:stage
+    container_name: leaf-flow-nginx-stage
+    ports:
+      - "5015:80"
+    depends_on:
+      - leaf-flow-stage
+    volumes:
+      - static_data:/app/static
+    env_file: .env
     restart: always
