@@ -30,7 +30,7 @@ class ProductRepository(Repository[Product]):
             stmt = stmt.where(
                 func.lower(Product.name).like(like) | func.lower(func.array_to_string(Product.tags, " ")).like(like)
             )
-        total_stmt = stmt.with_only_columns(func.count()).order_by(None)
+        total_stmt = stmt.with_only_columns(func.count(Product.id)).order_by(None)
         total = (await self.session.execute(total_stmt)).scalar_one()
         rows = (await self.session.execute(stmt.order_by(Product.name).limit(limit).offset(offset))).scalars().all()
         return total, rows
