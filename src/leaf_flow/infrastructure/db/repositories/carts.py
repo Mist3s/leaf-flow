@@ -27,7 +27,12 @@ class CartRepository(Repository[Cart]):
         await self.session.execute(delete(CartItem).where(CartItem.cart_id == cart_id))
 
     async def list_items(self, cart_id: int) -> Sequence[CartItem]:
-        return (await self.session.execute(select(CartItem).where(CartItem.cart_id == cart_id))).scalars().all()
+        stmt = (
+            select(CartItem)
+            .where(CartItem.cart_id == cart_id)
+            .order_by(CartItem.id)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
 
     async def upsert_item(self, cart_id: int, product_id: str, variant_id: str, quantity: int, price: Decimal) -> CartItem:
         stmt = select(CartItem).where(
