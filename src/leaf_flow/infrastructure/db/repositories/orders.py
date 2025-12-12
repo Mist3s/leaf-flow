@@ -24,6 +24,16 @@ class OrderRepository(Repository[Order]):
         stmt = select(Order).where(Order.id == order_id)
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
+    async def list_for_user(self, user_id: int, limit: int, offset: int) -> Sequence[Order]:
+        stmt = (
+            select(Order)
+            .where(Order.user_id == user_id)
+            .order_by(Order.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        return (await self.session.execute(stmt)).scalars().all()
+
 
 class OrderItemRepository(Repository[OrderItem]):
     def __init__(self, session: Session):

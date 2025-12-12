@@ -2,10 +2,12 @@ from decimal import Decimal
 from uuid import uuid4
 from typing import Iterable
 
-from leaf_flow.infrastructure.db.models.orders import Order, OrderItem, DeliveryMethodEnum, OrderStatusEnum
+from leaf_flow.infrastructure.db.models.orders import (
+    Order, OrderItem, DeliveryMethodEnum, OrderStatusEnum
+)
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
-from leaf_flow.domain.entities.order import OrderEntity, OrderItemEntity
+from leaf_flow.domain.entities.order import OrderEntity
 from leaf_flow.domain.mappers import map_order_model_to_entity
 
 
@@ -76,3 +78,22 @@ async def get_order(order_id: str, uow: UoW) -> tuple[OrderEntity | None]:
     return (map_order_model_to_entity(order, items),)
 
 
+async def list_orders_for_user(user_id: int, limit: int, offset: int, uow: UoW) -> list[OrderEntity]:
+    orders = await uow.orders.list_for_user(user_id=user_id, limit=limit, offset=offset)
+    entities: list[OrderEntity] = []
+    for order in orders:
+        entities.append(
+            OrderEntity(
+                id=order.id,
+                customer_name=order.customer_name,
+                phone=order.phone,
+                delivery=order.delivery.value,  # type: ignore[assignment]
+                total=order.total,
+                items=[],
+                address=order.address,
+                comment=order.comment,
+                status=order.status.value,  # type: ignore[assignment]
+                created_at=order.created_at,
+            )
+        )
+    return entities

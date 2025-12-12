@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     # --- Telegram ---
     TELEGRAM_BOT_TOKEN: str
+    # --- Internal integrations ---
+    INTERNAL_BOT_TOKEN: str
 
     @property
     def database_url(self) -> str:
