@@ -7,6 +7,7 @@ from leaf_flow.infrastructure.db.repositories.categories import CategoryReposito
 from leaf_flow.infrastructure.db.repositories.carts import CartRepository
 from leaf_flow.infrastructure.db.repositories.orders import OrderRepository, OrderItemRepository
 from leaf_flow.infrastructure.db.repositories.tokens import RefreshTokenRepository
+from leaf_flow.infrastructure.db.repositories.support_topics import SupportTopicRepository
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -21,6 +22,7 @@ class UoW:
     orders: OrderRepository
     order_items: OrderItemRepository
     refresh_tokens: RefreshTokenRepository
+    support_topics: SupportTopicRepository
     async def flush(self): await self.session.flush()
     async def commit(self): await self.session.commit()
     async def rollback(self): await self.session.rollback()
@@ -38,4 +40,5 @@ async def get_uow():
             orders=OrderRepository(s),
             order_items=OrderItemRepository(s),
             refresh_tokens=RefreshTokenRepository(s),
+            support_topics=SupportTopicRepository(s),
         )

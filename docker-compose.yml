@@ -29,6 +29,22 @@ services:
         limits:
           memory: 1G
 
+  leaf-flow-bot-stage:
+    image: mist3s/leaf-flow-bot:stage
+    container_name: leaf-flow-bot-stage
+    restart: always
+    env_file: .env
+    volumes:
+      - static_data:/app/static
+    environment:
+      - STATIC_FILES_PATH=/app/static
+    depends_on:
+      - leaf-flow-stage
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
   leaf-flow-nginx-stage:
     image: mist3s/leaf-flow-nginx:stage
     container_name: leaf-flow-nginx-stage
