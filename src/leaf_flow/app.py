@@ -12,7 +12,11 @@ from leaf_flow.api.v1.internal.routers.support_topics import router as internal_
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="leaf-flow")
+    app = FastAPI(
+        root_path="/api",
+        title="leaf-flow",
+        version="2.0.0"
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -20,14 +24,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.include_router(users_router, prefix="/api/v1/users", tags=["users"])
-    app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
-    app.include_router(catalog_router, prefix="/api/v1/catalog", tags=["catalog"])
-    app.include_router(cart_router, prefix="/api/v1/cart", tags=["cart"])
-    app.include_router(orders_router, prefix="/api/v1/orders", tags=["orders"])
-    app.include_router(internal_users_router, prefix="/api/v1/internal/users", tags=["internal"])
-    app.include_router(internal_orders_router, prefix="/api/v1/internal/orders", tags=["internal"])
-    app.include_router(internal_support_topics_router, prefix="/api/v1/internal/support-topics", tags=["internal"])
+    app.include_router(users_router, prefix="/v1/users", tags=["users"])
+    app.include_router(auth_router, prefix="/v1/auth", tags=["auth"])
+    app.include_router(catalog_router, prefix="/v1/catalog", tags=["catalog"])
+    app.include_router(cart_router, prefix="/v1/cart", tags=["cart"])
+    app.include_router(orders_router, prefix="/v1/orders", tags=["orders"])
+    app.include_router(internal_users_router, prefix="/v1/internal/users", tags=["internal"])
+    app.include_router(internal_orders_router, prefix="/v1/internal/orders", tags=["internal"])
+    app.include_router(internal_support_topics_router, prefix="/v1/internal/support-topics", tags=["internal"])
     return app
 
 
