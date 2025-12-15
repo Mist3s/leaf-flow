@@ -9,6 +9,7 @@ from leaf_flow.domain.mappers import map_user_model_to_entity
 from leaf_flow.config import settings
 
 _internal_http_bearer = HTTPBearer(auto_error=False)
+_admin_http_bearer = HTTPBearer(auto_error=False)
 
 def uow_dep(uow: UoW = Depends(get_uow)) -> UoW:
     return uow
@@ -41,4 +42,14 @@ async def require_internal_auth(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     token = credentials.credentials
     if token != settings.INTERNAL_BOT_TOKEN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+
+async def require_admin_auth(
+    credentials: HTTPAuthorizationCredentials | None = Security(_admin_http_bearer),
+) -> None:
+    if not credentials or not credentials.scheme or credentials.scheme.lower() != "bearer":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    token = credentials.credentials
+    if token != settings.ADMIN_API_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

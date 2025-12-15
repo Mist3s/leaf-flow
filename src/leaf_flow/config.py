@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str
     # --- Internal integrations ---
     INTERNAL_BOT_TOKEN: str
+    # --- Admin API ---
+    ADMIN_API_TOKEN: str
+    IMAGES_DIR: str = "static/images"
+    IMAGES_BASE_URL: str = "/images"
     # --- External BOT for notifications ---
     EXTERNAL_BOT_URL: str
     EXTERNAL_BOT_TOKEN: str
