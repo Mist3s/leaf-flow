@@ -12,7 +12,11 @@ COPY README.md ./
 COPY src ./src
 RUN pip install --upgrade pip && pip install .
 
-RUN useradd -m appuser && chown -R appuser:appuser /app
+# создать пользователя + директории + права
+RUN useradd -m appuser \
+ && mkdir -p /app/static/images \
+ && chown -R appuser:appuser /app
+
 USER appuser
 
 CMD ["python", "-m", "leaf_flow"]
