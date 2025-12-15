@@ -40,6 +40,18 @@ class ProductRepository(Repository[Product]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_multiple_with_variants(self, product_ids: list[str]) -> dict[str, Product]:
+        """
+        Загружает несколько продуктов с их вариантами одним запросом.
+        Возвращает словарь product_id -> Product.
+        """
+        if not product_ids:
+            return {}
+        stmt = select(Product).options(selectinload(Product.variants)).where(Product.id.in_(product_ids))
+        result = await self.session.execute(stmt)
+        products = result.scalars().all()
+        return {p.id: p for p in products}
+
 
 class ProductVariantRepository(Repository[ProductVariant]):
     def __init__(self, session: Session):

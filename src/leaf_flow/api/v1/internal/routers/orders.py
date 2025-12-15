@@ -2,15 +2,51 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 
 from leaf_flow.api.deps import uow_dep, require_internal_auth
 from leaf_flow.api.v1.internal.schemas.orders import (
-    InternalOrderListResponse, InternalOrderListItem, UpdateOrderStatusRequest
+    InternalOrderListResponse, InternalOrderListItem, UpdateOrderStatusRequest,
+    InternalOrderDetails, InternalCartItem
 )
-from leaf_flow.api.v1.app.schemas.orders import OrderDetails, CartItem
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.infrastructure.db.models.orders import OrderStatusEnum
 from leaf_flow.services import order_service
 
 
 router = APIRouter()
+
+
+async def _load_product_and_variant_names(order_items, uow: UoW) -> dict[tuple[str, str], tuple[str, str]]:
+    """
+    Загружает названия продуктов и веса вариантов для элементов заказа.
+    Возвращает словарь: (product_id, variant_id) -> (product_name, variant_weight)
+    """
+    # Собираем уникальные пары product_id и variant_id
+    product_variant_pairs = {(it.product_id, it.variant_id) for it in order_items}
+    
+    # Загружаем все необходимые продукты одним запросом
+    product_ids = list({pid for pid, _ in product_variant_pairs})
+    products_map = await uow.products.get_multiple_with_variants(product_ids)
+    
+    # Формируем результат
+    result = {}
+    for product_id, variant_id in product_variant_pairs:
+        product = products_map.get(product_id)
+        if product:
+            product_name = product.name
+            # Ищем вариант по variant_id
+            variant_weight = None
+            for variant in product.variants:
+                if variant.id == variant_id:
+                    variant_weight = variant.weight
+                    break
+            if variant_weight is not None:
+                result[(product_id, variant_id)] = (product_name, variant_weight)
+            else:
+                # Если вариант не найден, используем пустые значения
+                result[(product_id, variant_id)] = (product_name, "")
+        else:
+            # Если продукт не найден, используем пустые значения
+            result[(product_id, variant_id)] = ("", "")
+    
+    return result
 
 
 @router.get("", response_model=InternalOrderListResponse)
@@ -40,28 +76,34 @@ async def list_user_orders(
     )
 
 
-@router.get("/{order_id}", response_model=OrderDetails)
+@router.get("/{order_id}", response_model=InternalOrderDetails)
 async def get_order_details(
     order_id: str = Path(...),
     _: None = Depends(require_internal_auth),
     uow: UoW = Depends(uow_dep),
-) -> OrderDetails:
+) -> InternalOrderDetails:
     order_tuple = await order_service.get_order(order_id, uow)
     order = order_tuple[0]
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    return OrderDetails(
+    
+    # Загружаем названия продуктов и вариантов
+    names_map = await _load_product_and_variant_names(order.items, uow)
+    
+    return InternalOrderDetails(
         orderId=order.id,
         customerName=order.customer_name,
         deliveryMethod=order.delivery,
         total=order.total,
         items=[
-            CartItem(
+            InternalCartItem(
                 productId=it.product_id,
                 variantId=it.variant_id,
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
+                productName=names_map.get((it.product_id, it.variant_id), ("", ""))[0],
+                variantWeight=names_map.get((it.product_id, it.variant_id), ("", ""))[1],
             )
             for it in order.items
         ],
@@ -72,13 +114,13 @@ async def get_order_details(
     )
 
 
-@router.patch("/{order_id}/status", response_model=OrderDetails)
+@router.patch("/{order_id}/status", response_model=InternalOrderDetails)
 async def update_order_status(
     order_id: str = Path(...),
     payload: UpdateOrderStatusRequest = ...,
     _: None = Depends(require_internal_auth),
     uow: UoW = Depends(uow_dep),
-) -> OrderDetails:
+) -> InternalOrderDetails:
     """
     Обновляет статус заказа и отправляет уведомление во внешний API.
     """
@@ -108,18 +150,23 @@ async def update_order_status(
             detail=str(e)
         )
     
-    return OrderDetails(
+    # Загружаем названия продуктов и вариантов
+    names_map = await _load_product_and_variant_names(order.items, uow)
+    
+    return InternalOrderDetails(
         orderId=order.id,
         customerName=order.customer_name,
         deliveryMethod=order.delivery,
         total=order.total,
         items=[
-            CartItem(
+            InternalCartItem(
                 productId=it.product_id,
                 variantId=it.variant_id,
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
+                productName=names_map.get((it.product_id, it.variant_id), ("", ""))[0],
+                variantWeight=names_map.get((it.product_id, it.variant_id), ("", ""))[1],
             )
             for it in order.items
         ],
