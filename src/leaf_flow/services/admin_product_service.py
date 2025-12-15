@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from decimal import Decimal
+from typing import Sequence
 
 from leaf_flow.domain.entities.product import ProductEntity, ProductVariantEntity
 from leaf_flow.domain.mappers import map_product_model_to_entity, map_product_variant_model_to_entity
@@ -12,6 +14,13 @@ async def _ensure_category_exists(category_slug: str, uow: UoW) -> None:
         raise ValueError("CATEGORY_NOT_FOUND")
 
 
+@dataclass(slots=True)
+class NewProductVariant:
+    id: str
+    weight: str
+    price: Decimal
+
+
 async def create_product(
     *,
     product_id: str,
@@ -20,6 +29,7 @@ async def create_product(
     category_slug: str,
     tags: list[str],
     image: str,
+    variants: Sequence[NewProductVariant] | None = None,
     uow: UoW,
 ) -> ProductEntity:
     existing = await uow.products.get(product_id)
@@ -28,6 +38,25 @@ async def create_product(
 
     await _ensure_category_exists(category_slug, uow)
 
+    seen_variant_ids = set()
+    seen_weights = set()
+    variant_models: list[ProductVariant] = []
+    for variant in variants or []:
+        if variant.id in seen_variant_ids:
+            raise ValueError("VARIANT_EXISTS")
+        if variant.weight in seen_weights:
+            raise ValueError("VARIANT_WEIGHT_CONFLICT")
+        seen_variant_ids.add(variant.id)
+        seen_weights.add(variant.weight)
+        variant_models.append(
+            ProductVariant(
+                id=variant.id,
+                product_id=product_id,
+                weight=variant.weight,
+                price=variant.price,
+            )
+        )
+
     product = Product(
         id=product_id,
         name=name,
@@ -35,6 +64,7 @@ async def create_product(
         category_slug=category_slug,
         tags=tags,
         image=image,
+        variants=variant_models,
     )
     await uow.products.add(product)
     await uow.flush()

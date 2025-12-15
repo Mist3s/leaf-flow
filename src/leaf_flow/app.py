@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from leaf_flow.api.v1.app.routers.users import router as users_router
 from leaf_flow.api.v1.auth.routers.auth import router as auth_router
@@ -10,6 +13,7 @@ from leaf_flow.api.v1.internal.routers.users import router as internal_users_rou
 from leaf_flow.api.v1.internal.routers.orders import router as internal_orders_router
 from leaf_flow.api.v1.internal.routers.support_topics import router as internal_support_topics_router
 from leaf_flow.api.v1.admin.routers.products import router as admin_products_router
+from leaf_flow.config import settings
 
 
 def create_app() -> FastAPI:
@@ -25,6 +29,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    static_images_dir = Path(settings.IMAGES_DIR)
+    static_images_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/images", StaticFiles(directory=static_images_dir), name="images")
+
     app.include_router(users_router, prefix="/v1/users", tags=["users"])
     app.include_router(auth_router, prefix="/v1/auth", tags=["auth"])
     app.include_router(catalog_router, prefix="/v1/catalog", tags=["catalog"])
