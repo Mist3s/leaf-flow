@@ -29,5 +29,3 @@ class RefreshTokenRepository(Repository[RefreshToken]):
             .where(RefreshToken.user_id == user_id)
             .values(revoked=True, revoked_at=revoked_at)
         )
-
-

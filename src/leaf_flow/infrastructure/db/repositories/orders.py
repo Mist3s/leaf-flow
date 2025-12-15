@@ -1,8 +1,7 @@
 from typing import Sequence
-from decimal import Decimal
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from leaf_flow.infrastructure.db.models.orders import Order, OrderItem
 from leaf_flow.infrastructure.db.repositories.base import Repository
@@ -28,6 +27,7 @@ class OrderRepository(Repository[Order]):
         stmt = (
             select(Order)
             .where(Order.user_id == user_id)
+            .options(selectinload(Order.items))
             .order_by(Order.created_at.desc())
             .limit(limit)
             .offset(offset)
@@ -42,5 +42,3 @@ class OrderItemRepository(Repository[OrderItem]):
     async def list_for_order(self, order_id: str) -> Sequence[OrderItem]:
         stmt = select(OrderItem).where(OrderItem.order_id == order_id)
         return (await self.session.execute(stmt)).scalars().all()
-
-

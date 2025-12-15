@@ -1,5 +1,6 @@
+import random
+import string
 from decimal import Decimal
-from uuid import uuid4
 from typing import Iterable
 
 from leaf_flow.infrastructure.db.models.orders import (
@@ -9,6 +10,27 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity
 from leaf_flow.domain.mappers import map_order_model_to_entity
+
+LETTERS = string.ascii_uppercase
+DIGITS = string.digits
+ALPHABET = LETTERS + DIGITS
+
+def generate_order_id(length: int = 8) -> str:
+    if length < 2:
+        raise ValueError("length must be >= 2 to include both letter and digit")
+
+    chars = [random.choice(LETTERS), random.choice(DIGITS)]
+    chars += random.choices(ALPHABET, k=length - 2)
+    random.shuffle(chars)
+    return "".join(chars)
+
+
+async def generate_unique_order_id(uow: UoW, length: int = 8, max_tries: int = 50) -> str:
+    for _ in range(max_tries):
+        order_id = generate_order_id(length)
+        if not await uow.orders.get(order_id):  # type: ignore[assignment]
+            return order_id
+    raise RuntimeError("FAILED_TO_GENERATE_UNIQUE_ORDER_ID")
 
 
 def _ensure_totals_match(items: Iterable, expected_total: Decimal | None) -> None:
@@ -41,7 +63,7 @@ async def create_order(
         ],
         expected_total,
     )
-    order_id = uuid4().hex
+    order_id = await generate_unique_order_id(uow)
     order = Order(
         id=order_id,
         user_id=user_id,
@@ -82,18 +104,5 @@ async def list_orders_for_user(user_id: int, limit: int, offset: int, uow: UoW) 
     orders = await uow.orders.list_for_user(user_id=user_id, limit=limit, offset=offset)
     entities: list[OrderEntity] = []
     for order in orders:
-        entities.append(
-            OrderEntity(
-                id=order.id,
-                customer_name=order.customer_name,
-                phone=order.phone,
-                delivery=order.delivery.value,  # type: ignore[assignment]
-                total=order.total,
-                items=[],
-                address=order.address,
-                comment=order.comment,
-                status=order.status.value,  # type: ignore[assignment]
-                created_at=order.created_at,
-            )
-        )
+        entities.append(map_order_model_to_entity(order, order.items))
     return entities
