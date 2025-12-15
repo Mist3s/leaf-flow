@@ -9,3 +9,12 @@ class InternalUserPublic(BaseModel):
     username: str | None = None
     languageCode: str | None = None
     photoUrl: str | None = None
+
+
+class TelegramBotRegisterRequest(BaseModel):
+    telegramId: int
+    firstName: str
+    lastName: str | None = None
+    username: str | None = None
+    languageCode: str | None = None
+    photoUrl: str | None = None

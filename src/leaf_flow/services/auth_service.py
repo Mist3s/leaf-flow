@@ -58,6 +58,14 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
         )
         await uow.users.add(user)
         await uow.flush()
+    else:
+        # Обновляем данные существующего пользователя
+        user.first_name = tuser.first_name
+        user.last_name = tuser.last_name
+        user.username = tuser.username
+        user.language_code = tuser.language_code
+        user.photo_url = tuser.photo_url
+        await uow.flush()
 
     # Генерируем токены
     access_token, access_ttl = create_access_token(user.id)
@@ -80,6 +88,51 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
     return tokens, map_user_model_to_entity(user)
 
 
+async def register_user_from_bot(
+    telegram_id: int,
+    first_name: str,
+    last_name: str | None = None,
+    username: str | None = None,
+    language_code: str | None = None,
+    photo_url: str | None = None,
+    uow: UoW | None = None
+) -> UserEntity:
+    """
+    Регистрация пользователя из Telegram бота без верификации initData.
+    Если пользователь уже существует, обновляет его данные.
+    Токены не генерируются.
+    """
+    if uow is None:
+        raise ValueError("UoW is required")
+    
+    # Проверяем, существует ли пользователь
+    user = await uow.users.get_by_telegram_id(telegram_id)
+    
+    if user is None:
+        # Создаем нового пользователя
+        user = User(
+            telegram_id=telegram_id,
+            first_name=first_name,
+            last_name=last_name,
+            username=username,
+            language_code=language_code,
+            photo_url=photo_url,
+        )
+        await uow.users.add(user)
+        await uow.flush()
+    else:
+        # Обновляем данные существующего пользователя
+        user.first_name = first_name
+        user.last_name = last_name
+        user.username = username
+        user.language_code = language_code
+        user.photo_url = photo_url
+        await uow.flush()
+    
+    await uow.commit()
+    return map_user_model_to_entity(user)
+
+
 async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
     token_model = await uow.refresh_tokens.get_by_token(old_refresh_token)
     if not token_model or token_model.revoked or token_model.expires_at <= _utcnow():
@@ -94,7 +147,7 @@ async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
         expires_at=_utcnow() + timedelta(seconds=settings.REFRESH_TOKEN_TTL_SECONDS),
     )
     await uow.refresh_tokens.add(new_refresh)
-    access_token, access_ttl = create_access_token(user.id)
+    access_token, access_ttl = create_access_token(user_id)
     await uow.commit()
     return AuthTokens(
         accessToken=access_token,
