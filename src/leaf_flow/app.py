@@ -9,6 +9,7 @@ from leaf_flow.api.v1.app.routers.orders import router as orders_router
 from leaf_flow.api.v1.internal.routers.users import router as internal_users_router
 from leaf_flow.api.v1.internal.routers.orders import router as internal_orders_router
 from leaf_flow.api.v1.internal.routers.support_topics import router as internal_support_topics_router
+from leaf_flow.api.v1.admin.routers.products import router as admin_products_router
 
 
 def create_app() -> FastAPI:
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(catalog_router, prefix="/v1/catalog", tags=["catalog"])
     app.include_router(cart_router, prefix="/v1/cart", tags=["cart"])
     app.include_router(orders_router, prefix="/v1/orders", tags=["orders"])
+    app.include_router(admin_products_router, prefix="/v1/admin/products", tags=["admin-products"])
     app.include_router(internal_users_router, prefix="/v1/internal/users", tags=["internal"])
     app.include_router(internal_orders_router, prefix="/v1/internal/orders", tags=["internal"])
     app.include_router(internal_support_topics_router, prefix="/v1/internal/support-topics", tags=["internal"])
