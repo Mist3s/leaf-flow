@@ -10,6 +10,7 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity
 from leaf_flow.domain.mappers import map_order_model_to_entity
+from leaf_flow.services.notification_service import send_order_status_notification
 
 LETTERS = string.ascii_uppercase
 DIGITS = string.digits
@@ -89,6 +90,17 @@ async def create_order(
     await uow.orders.add_with_items(order, order_items)
     await uow.commit()
     await clear_cart(user_id, uow)
+    
+    # Отправляем уведомление о создании заказа
+    user = await uow.users.get(user_id)
+    if user and user.telegram_id:
+        await send_order_status_notification(
+            order_id=order_id,
+            user_telegram_id=user.telegram_id,
+            new_status="created",
+            comment=comment,
+        )
+    
     return map_order_model_to_entity(order, order_items)
 
 
@@ -106,3 +118,46 @@ async def list_orders_for_user(user_id: int, limit: int, offset: int, uow: UoW) 
     for order in orders:
         entities.append(map_order_model_to_entity(order, order.items))
     return entities
+
+
+async def update_order_status(
+    order_id: str,
+    new_status: OrderStatusEnum,
+    comment: str | None,
+    uow: UoW,
+) -> OrderEntity:
+    """
+    Обновляет статус заказа и отправляет уведомление во внешний API.
+
+    Args:
+        order_id: ID заказа
+        new_status: Новый статус заказа
+        comment: Опциональный комментарий к изменению статуса
+        uow: Unit of Work
+
+    Returns:
+        OrderEntity: Обновленная сущность заказа
+
+    Raises:
+        ValueError: Если заказ не найден
+    """
+    order = await uow.orders.get_with_items(order_id)
+    if not order:
+        raise ValueError("ORDER_NOT_FOUND")
+    
+    order.status = new_status
+    await uow.commit()
+    
+    # Отправляем уведомление о смене статуса
+    if order.user_id:
+        user = await uow.users.get(order.user_id)
+        if user and user.telegram_id:
+            await send_order_status_notification(
+                order_id=order_id,
+                user_telegram_id=user.telegram_id,
+                new_status=new_status.value,
+                comment=comment,
+            )
+    
+    items = await uow.order_items.list_for_order(order_id)
+    return map_order_model_to_entity(order, items)

@@ -18,7 +18,8 @@ dependencies = [
   "alembic==1.16.5",
   "uvicorn==0.37.0",
   "psycopg2-binary==2.9.11",
-  "PyJWT==2.10.1"
+  "PyJWT==2.10.1",
+  "httpx==0.27.2"
 ]
 
 [tool.hatch.build.targets.wheel]

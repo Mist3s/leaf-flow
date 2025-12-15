@@ -20,5 +20,3 @@ class Cart(BaseModel):
     totalCount: int
     totalPrice: Decimal
     updatedAt: datetime | None = None
-
-

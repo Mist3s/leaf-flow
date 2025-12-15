@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Literal
+from typing import Literal
 from pydantic import BaseModel, Field
 
 from leaf_flow.api.v1.app.schemas.cart import CartItem
@@ -22,12 +22,12 @@ class OrderRequest(BaseModel):
 class OrderSummary(BaseModel):
     orderId: str
     customerName: str
-    deliveryMethod: str
+    deliveryMethod: DeliveryMethod
     total: Decimal
 
 
 class OrderDetails(OrderSummary):
-    items: List[CartItem]
+    items: list[CartItem]
     address: str | None = None
     comment: str | None = None
     status: OrderStatus

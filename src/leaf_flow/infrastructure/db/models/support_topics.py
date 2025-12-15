@@ -20,5 +20,3 @@ class SupportTopic(Base):
         UniqueConstraint("admin_chat_id", "thread_id", name="uq_support_topics_admin_chat_id_thread_id"),
         Index("ix_support_topics_admin_chat_id_thread_id", "admin_chat_id", "thread_id"),
     )
-
-

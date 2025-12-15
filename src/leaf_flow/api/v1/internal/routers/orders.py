@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 
 from leaf_flow.api.deps import uow_dep, require_internal_auth
-from leaf_flow.api.v1.internal.schemas.orders import InternalOrderListResponse, InternalOrderListItem
+from leaf_flow.api.v1.internal.schemas.orders import (
+    InternalOrderListResponse, InternalOrderListItem, UpdateOrderStatusRequest
+)
 from leaf_flow.api.v1.app.schemas.orders import OrderDetails, CartItem
 from leaf_flow.infrastructure.db.uow import UoW
+from leaf_flow.infrastructure.db.models.orders import OrderStatusEnum
 from leaf_flow.services import order_service
 
 
@@ -47,6 +50,64 @@ async def get_order_details(
     order = order_tuple[0]
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    return OrderDetails(
+        orderId=order.id,
+        customerName=order.customer_name,
+        deliveryMethod=order.delivery,
+        total=order.total,
+        items=[
+            CartItem(
+                productId=it.product_id,
+                variantId=it.variant_id,
+                quantity=it.quantity,
+                price=it.price,
+                total=it.total,
+            )
+            for it in order.items
+        ],
+        address=order.address,
+        comment=order.comment,
+        status=order.status,
+        createdAt=order.created_at
+    )
+
+
+@router.patch("/{order_id}/status", response_model=OrderDetails)
+async def update_order_status(
+    order_id: str = Path(...),
+    payload: UpdateOrderStatusRequest = ...,
+    _: None = Depends(require_internal_auth),
+    uow: UoW = Depends(uow_dep),
+) -> OrderDetails:
+    """
+    Обновляет статус заказа и отправляет уведомление во внешний API.
+    """
+    try:
+        new_status = OrderStatusEnum(payload.newStatus)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid order status: {payload.newStatus}"
+        )
+    
+    try:
+        order = await order_service.update_order_status(
+            order_id=order_id,
+            new_status=new_status,
+            comment=payload.comment,
+            uow=uow,
+        )
+    except ValueError as e:
+        if str(e) == "ORDER_NOT_FOUND":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
     return OrderDetails(
         orderId=order.id,
         customerName=order.customer_name,
