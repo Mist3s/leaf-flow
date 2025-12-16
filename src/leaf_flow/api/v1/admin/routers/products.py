@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Path as PathParam, Request, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Path as PathParam, Request, Response, UploadFile, status
 from pydantic import ValidationError
 
 from leaf_flow.api.deps import require_admin_auth, uow_dep
@@ -17,7 +17,7 @@ from leaf_flow.api.v1.app.schemas.catalog import ProductVariant
 from leaf_flow.config import settings
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import admin_product_service
-from leaf_flow.services.media_service import save_image
+from leaf_flow.services.media_service import save_base64_image, save_image
 
 router = APIRouter()
 
@@ -69,20 +69,31 @@ async def _parse_create_payload(request: Request) -> tuple[ProductCreateRequest,
     return payload, image_upload if isinstance(image_upload, UploadFile) else None
 
 
-@router.post("/", response_model=AdminProductResponse, status_code=status.HTTP_201_CREATED)
-async def create_product(
-    request: Request,
-    _: None = Depends(require_admin_auth),
-    uow: UoW = Depends(uow_dep),
-) -> AdminProductResponse:
-    payload, image_upload = await _parse_create_payload(request)
+async def _resolve_image_path(
+    *,
+    image: str | None,
+    image_base64: str | None,
+    image_upload: UploadFile | None,
+    require_image: bool,
+) -> str | None:
+    normalized_image = image.strip() if image else None
+    if image_base64:
+        try:
+            return await save_base64_image(
+                image_base64,
+                upload_dir=Path(settings.IMAGES_DIR),
+                public_prefix=settings.IMAGES_BASE_URL,
+            )
+        except ValueError as e:
+            if str(e) == "UNSUPPORTED_IMAGE_TYPE":
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported image type")
+            if str(e) == "INVALID_IMAGE_DATA":
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image data")
+            raise
 
-    image_path = payload.image.strip() if payload.image else None
-    if image_path is None and image_upload is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image is required")
     if image_upload:
         try:
-            image_path = await save_image(
+            return await save_image(
                 image_upload,
                 upload_dir=Path(settings.IMAGES_DIR),
                 public_prefix=settings.IMAGES_BASE_URL,
@@ -91,6 +102,29 @@ async def create_product(
             if str(e) == "UNSUPPORTED_IMAGE_TYPE":
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported image type")
             raise
+
+    if normalized_image:
+        return normalized_image
+
+    if require_image:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image is required")
+    return None
+
+
+@router.post("/", response_model=AdminProductResponse, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    request: Request,
+    _: None = Depends(require_admin_auth),
+    uow: UoW = Depends(uow_dep),
+) -> AdminProductResponse:
+    payload, image_upload = await _parse_create_payload(request)
+
+    image_path = await _resolve_image_path(
+        image=payload.image,
+        image_base64=payload.image_base64,
+        image_upload=image_upload,
+        require_image=True,
+    )
 
     variant_inputs = [
         admin_product_service.NewProductVariant(**variant.model_dump()) for variant in payload.variants
@@ -134,6 +168,19 @@ async def update_product(
     _: None = Depends(require_admin_auth),
     uow: UoW = Depends(uow_dep),
 ) -> AdminProductResponse:
+    image_path = await _resolve_image_path(
+        image=payload.image,
+        image_base64=payload.image_base64,
+        image_upload=None,
+        require_image=False,
+    )
+
+    variants = (
+        [admin_product_service.NewProductVariant(**variant.model_dump()) for variant in payload.variants]
+        if payload.variants is not None
+        else None
+    )
+
     try:
         product = await admin_product_service.update_product(
             product_id=productId,
@@ -141,7 +188,8 @@ async def update_product(
             description=payload.description,
             category_slug=payload.category,
             tags=payload.tags,
-            image=payload.image,
+            image=image_path,
+            variants=variants,
             uow=uow,
         )
     except ValueError as e:
@@ -149,6 +197,13 @@ async def update_product(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
         if str(e) == "CATEGORY_NOT_FOUND":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown category")
+        if str(e) == "VARIANT_EXISTS":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Variant already exists")
+        if str(e) == "VARIANT_WEIGHT_CONFLICT":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Variant with the same weight already exists",
+            )
         raise
     return _map_product_entity(product)
 
@@ -219,3 +274,29 @@ async def update_product_variant(
             )
         raise
     return AdminProductVariantResponse(id=variant.id, weight=variant.weight, price=variant.price)
+
+
+@router.delete(
+    "/{productId}/variants/{variantId}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={404: {"description": "Not found"}},
+)
+async def delete_product_variant(
+    productId: str = PathParam(..., description="Product identifier"),
+    variantId: str = PathParam(..., description="Variant identifier"),
+    _: None = Depends(require_admin_auth),
+    uow: UoW = Depends(uow_dep),
+) -> Response:
+    try:
+        await admin_product_service.delete_product_variant(
+            product_id=productId,
+            variant_id=variantId,
+            uow=uow,
+        )
+    except ValueError as e:
+        if str(e) == "PRODUCT_NOT_FOUND":
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        if str(e) == "VARIANT_NOT_FOUND":
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Variant not found")
+        raise
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

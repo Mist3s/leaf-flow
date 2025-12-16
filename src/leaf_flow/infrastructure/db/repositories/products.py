@@ -63,4 +63,6 @@ class ProductVariantRepository(Repository[ProductVariant]):
         )
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
+    async def delete(self, variant: ProductVariant) -> None:
+        await self.session.delete(variant)
 
