@@ -15,6 +15,7 @@ class ProductCreateRequest(BaseModel):
     category: str
     tags: List[str] = Field(default_factory=list)
     image: str | None = None
+    image_base64: str | None = None
     variants: List["ProductVariantCreateRequest"] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid")
@@ -26,6 +27,8 @@ class ProductUpdateRequest(BaseModel):
     category: str | None = None
     tags: List[str] | None = None
     image: str | None = None
+    image_base64: str | None = None
+    variants: List["ProductVariantCreateRequest"] | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -54,3 +57,4 @@ class AdminProductVariantResponse(ProductVariant):
 
 
 ProductCreateRequest.model_rebuild()
+ProductUpdateRequest.model_rebuild()

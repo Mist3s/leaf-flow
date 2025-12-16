@@ -80,6 +80,7 @@ async def update_product(
     category_slug: str | None,
     tags: list[str] | None,
     image: str | None,
+    variants: Sequence[NewProductVariant] | None = None,
     uow: UoW,
 ) -> ProductEntity:
     product = await uow.products.get_with_variants(product_id)
@@ -98,6 +99,36 @@ async def update_product(
         product.tags = tags
     if image is not None:
         product.image = image
+    if variants is not None:
+        seen_variant_ids: set[str] = set()
+        seen_weights: set[str] = set()
+        existing_variants = {variant.id: variant for variant in product.variants}
+        updated_variants: list[ProductVariant] = []
+
+        for variant in variants:
+            if variant.id in seen_variant_ids:
+                raise ValueError("VARIANT_EXISTS")
+            if variant.weight in seen_weights:
+                raise ValueError("VARIANT_WEIGHT_CONFLICT")
+
+            seen_variant_ids.add(variant.id)
+            seen_weights.add(variant.weight)
+
+            if variant.id in existing_variants:
+                existing_variant = existing_variants[variant.id]
+                existing_variant.weight = variant.weight
+                existing_variant.price = variant.price
+                updated_variants.append(existing_variant)
+            else:
+                updated_variants.append(
+                    ProductVariant(
+                        id=variant.id,
+                        product_id=product_id,
+                        weight=variant.weight,
+                        price=variant.price,
+                    )
+                )
+        product.variants = updated_variants
 
     await uow.commit()
     return map_product_model_to_entity(product)
@@ -133,6 +164,19 @@ async def add_product_variant(
     await uow.flush()
     await uow.commit()
     return map_product_variant_model_to_entity(new_variant)
+
+
+async def delete_product_variant(product_id: str, variant_id: str, *, uow: UoW) -> None:
+    product = await uow.products.get_with_variants(product_id)
+    if not product:
+        raise ValueError("PRODUCT_NOT_FOUND")
+
+    variant = next((v for v in product.variants if v.id == variant_id), None)
+    if not variant:
+        raise ValueError("VARIANT_NOT_FOUND")
+
+    await uow.product_variants.delete(variant)
+    await uow.commit()
 
 
 async def update_product_variant(
