@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import Literal
 from pydantic import BaseModel, Field
 
-from leaf_flow.api.v1.app.schemas.cart import CartItem
 
 
 DeliveryMethod = Literal["pickup", "courier", "cdek"]
@@ -26,8 +25,27 @@ class OrderSummary(BaseModel):
     total: Decimal
 
 
+class OrderListItem(BaseModel):
+    orderId: str
+    customerName: str
+    deliveryMethod: DeliveryMethod
+    total: Decimal
+    status: OrderStatus
+    createdAt: datetime
+
+
+class OrderItemDetails(BaseModel):
+    productId: str
+    variantId: str
+    quantity: int
+    price: Decimal
+    total: Decimal
+    productName: str
+    variantWeight: str
+
+
 class OrderDetails(OrderSummary):
-    items: list[CartItem]
+    items: list[OrderItemDetails]
     address: str | None = None
     comment: str | None = None
     status: OrderStatus
