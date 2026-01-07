@@ -12,6 +12,8 @@ from leaf_flow.services.security import (
     verify_telegram_webapp_request,
     create_access_token,
     generate_refresh_token,
+    hash_password,
+    verify_password,
     _utcnow
 )
 from leaf_flow.domain.entities.user import UserEntity
@@ -131,6 +133,119 @@ async def register_user_from_bot(
     
     await uow.commit()
     return map_user_model_to_entity(user)
+
+
+async def register_email_user(
+    email: str,
+    password: str,
+    first_name: str,
+    last_name: str | None = None,
+    uow: UoW | None = None
+) -> tuple[AuthTokens, UserEntity]:
+    """
+    Регистрация нового пользователя по email и паролю.
+    
+    Args:
+        email: Email пользователя (должен быть уникальным)
+        password: Пароль в открытом виде
+        first_name: Имя пользователя
+        last_name: Фамилия пользователя (опционально)
+        uow: Unit of Work
+        
+    Returns:
+        Кортеж из токенов авторизации и сущности пользователя
+        
+    Raises:
+        ValueError: Если email уже существует или данные невалидны
+    """
+    if uow is None:
+        raise ValueError("UoW is required")
+    
+    # Проверка уникальности email
+    existing_user = await uow.users.get_by_email(email)
+    if existing_user:
+        raise ValueError("EMAIL_ALREADY_EXISTS")
+    
+    # Хеширование пароля
+    password_hash = hash_password(password)
+    
+    # Создание пользователя
+    user = User(
+        email=email,
+        password_hash=password_hash,
+        first_name=first_name,
+        last_name=last_name,
+        telegram_id=None,  # Email-пользователь без Telegram
+    )
+    await uow.users.add(user)
+    await uow.flush()
+    
+    # Генерация токенов (та же логика, что и для Telegram)
+    access_token, access_ttl = create_access_token(user.id)
+    refresh_raw = generate_refresh_token()
+    refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
+    refresh = RefreshToken(
+        user_id=user.id,
+        token=refresh_raw,
+        expires_at=_utcnow() + timedelta(seconds=refresh_expires_in),
+    )
+    await uow.refresh_tokens.add(refresh)
+    await uow.commit()
+    
+    tokens = AuthTokens(
+        accessToken=access_token,
+        refreshToken=refresh_raw,
+        expiresIn=access_ttl,
+        refreshExpiresIn=refresh_expires_in,
+    )
+    return tokens, map_user_model_to_entity(user)
+
+
+async def authenticate_email_user(
+    email: str,
+    password: str,
+    uow: UoW
+) -> tuple[AuthTokens, UserEntity]:
+    """
+    Авторизация пользователя по email и паролю.
+    
+    Args:
+        email: Email пользователя
+        password: Пароль в открытом виде
+        uow: Unit of Work
+        
+    Returns:
+        Кортеж из токенов авторизации и сущности пользователя
+        
+    Raises:
+        ValueError: Если email или пароль неверны
+    """
+    user = await uow.users.get_by_email(email)
+    if not user or not user.password_hash:
+        raise ValueError("INVALID_CREDENTIALS")
+    
+    if not verify_password(password, user.password_hash):
+        raise ValueError("INVALID_CREDENTIALS")
+    
+    # Генерация токенов (та же логика, что и для Telegram)
+    access_token, access_ttl = create_access_token(user.id)
+    refresh_raw = generate_refresh_token()
+    refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
+    refresh = RefreshToken(
+        user_id=user.id,
+        token=refresh_raw,
+        expires_at=_utcnow() + timedelta(seconds=refresh_expires_in),
+    )
+    await uow.refresh_tokens.add(refresh)
+    await uow.commit()
+    
+    tokens = AuthTokens(
+        accessToken=access_token,
+        refreshToken=refresh_raw,
+        expiresIn=access_ttl,
+        refreshExpiresIn=refresh_expires_in,
+    )
+    return tokens, map_user_model_to_entity(user)
 
 
 async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:

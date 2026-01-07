@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class InternalUserPublic(BaseModel):
     id: str
-    telegramId: int
+    telegramId: int | None = None
     firstName: str | None = None
     lastName: str | None = None
     username: str | None = None

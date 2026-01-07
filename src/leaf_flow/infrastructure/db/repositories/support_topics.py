@@ -24,3 +24,7 @@ class SupportTopicRepository(Repository[SupportTopic]):
         )
         return result.scalar_one_or_none()
 
+
+
+
+

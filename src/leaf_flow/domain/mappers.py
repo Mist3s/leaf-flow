@@ -14,8 +14,9 @@ from leaf_flow.infrastructure.db.models.orders import Order as OrderModel, Order
 def map_user_model_to_entity(user: UserModel) -> UserEntity:
     return UserEntity(
         id=user.id,
-        telegram_id=user.telegram_id,
         first_name=user.first_name,
+        telegram_id=user.telegram_id,
+        email=user.email,
         last_name=user.last_name,
         username=user.username,
         language_code=user.language_code,

@@ -18,3 +18,7 @@ class SupportTopicByThreadResponse(BaseModel):
     user_telegram_id: int
     thread_id: int
     admin_chat_id: int
+
+
+
+

@@ -21,6 +21,13 @@ async def get_by_telegram_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Пользователь ещё не авторизовывался через WebApp",
         )
+    # В этом эндпоинте telegram_id всегда присутствует, т.к. мы ищем по telegram_id
+    # Но для безопасности проверяем
+    if user.telegram_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="User data inconsistency",
+        )
     return InternalUserPublic(
         id=str(user.id),
         telegramId=user.telegram_id,
@@ -56,6 +63,13 @@ async def register_user(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    # После регистрации через register_user_from_bot telegram_id всегда присутствует
+    # Но для безопасности проверяем
+    if user.telegram_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="User data inconsistency",
+        )
     return InternalUserPublic(
         id=str(user.id),
         telegramId=user.telegram_id,

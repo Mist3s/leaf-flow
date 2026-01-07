@@ -7,6 +7,7 @@ from operator import itemgetter
 from typing import Any, Optional
 from urllib.parse import parse_qsl
 
+import bcrypt
 import jwt
 
 from leaf_flow.config import settings
@@ -54,5 +55,39 @@ def verify_telegram_webapp_request(encoded_init_data: str, bot_token: str) -> bo
         key=secret_key.digest(), msg=data_check_string.encode(), digestmod=hashlib.sha256
     ).hexdigest()
     return calculated_hash == hash_
+
+
+def hash_password(password: str) -> str:
+    """
+    Хеширует пароль с использованием bcrypt.
+    
+    Args:
+        password: Пароль в открытом виде
+        
+    Returns:
+        Хешированный пароль (строка)
+    """
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Проверяет соответствие пароля его хешу.
+    
+    Args:
+        plain_password: Пароль в открытом виде
+        hashed_password: Хешированный пароль из БД
+        
+    Returns:
+        True если пароль совпадает, False иначе
+    """
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8")
+        )
+    except Exception:
+        return False
 
 

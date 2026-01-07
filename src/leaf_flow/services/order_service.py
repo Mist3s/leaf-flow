@@ -10,7 +10,10 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity
 from leaf_flow.domain.mappers import map_order_model_to_entity
-from leaf_flow.services.notification_service import send_order_status_notification
+from leaf_flow.services.notification_service import (
+    send_order_status_notification,
+    send_website_order_notification,
+)
 
 LETTERS = string.ascii_uppercase
 DIGITS = string.digits
@@ -93,11 +96,24 @@ async def create_order(
     
     # Отправляем уведомление о создании заказа
     user = await uow.users.get(user_id)
-    if user and user.telegram_id:
+    if user and user.telegram_id is not None:
+        # Type narrowing: после проверки user.telegram_id гарантированно не None
+        telegram_id = user.telegram_id
         await send_order_status_notification(
             order_id=order_id,
-            user_telegram_id=user.telegram_id,
+            user_telegram_id=telegram_id,
             new_status="created",
+            comment=comment,
+        )
+    elif user and user.email is not None:
+        # Пользователь зарегистрирован через сайт (по email)
+        await send_website_order_notification(
+            order_id=order_id,
+            email=user.email,
+            phone=phone,
+            customer_name=customer_name,
+            total=str(cart.total_price),
+            delivery_method=delivery.value,
             comment=comment,
         )
     
@@ -151,10 +167,12 @@ async def update_order_status(
     # Отправляем уведомление о смене статуса
     if order.user_id:
         user = await uow.users.get(order.user_id)
-        if user and user.telegram_id:
+        if user and user.telegram_id is not None:
+            # Type narrowing: после проверки user.telegram_id гарантированно не None
+            telegram_id = user.telegram_id
             await send_order_status_notification(
                 order_id=order_id,
-                user_telegram_id=user.telegram_id,
+                user_telegram_id=telegram_id,
                 new_status=new_status.value,
                 comment=comment,
             )
