@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint, Numeric, DateTime, func
+from sqlalchemy import ForeignKey, String, UniqueConstraint, Numeric, DateTime, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from leaf_flow.infrastructure.db.base import Base
@@ -29,6 +29,8 @@ class CartItem(Base):
 
     __table_args__ = (
         UniqueConstraint("cart_id", "product_id", "variant_id", name="uq_cart_item_unique"),
+        # Составной индекс для быстрого поиска товара в корзине
+        Index("ix_cart_items_cart_product_variant", "cart_id", "product_id", "variant_id"),
     )
 
 

@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     DB_HOST: str
     DB_PORT: int
+    # --- Настройки пула соединений ---
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE: int = 300
 
     # --- Безопасность / JWT ---
     JWT_SECRET: str

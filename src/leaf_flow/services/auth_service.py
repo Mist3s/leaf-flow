@@ -270,5 +270,3 @@ async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
         expiresIn=access_ttl,
         refreshExpiresIn=settings.REFRESH_TOKEN_TTL_SECONDS,
     )
-
-

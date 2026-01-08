@@ -121,4 +121,3 @@ async def send_website_order_notification(
             f"Unexpected error sending website order notification: {e}, "
             f"order_id={order_id}"
         )
-

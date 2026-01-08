@@ -2,7 +2,7 @@ from decimal import Decimal
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import String, Enum as SAEnum, ForeignKey, Numeric, DateTime, func
+from sqlalchemy import String, Enum as SAEnum, ForeignKey, Numeric, DateTime, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from leaf_flow.infrastructure.db.base import Base
@@ -32,10 +32,15 @@ class Order(Base):
     address: Mapped[str | None] = mapped_column(String(1024), default=None)
     comment: Mapped[str | None] = mapped_column(String(500), default=None)
     total: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    status: Mapped[OrderStatusEnum] = mapped_column(SAEnum(OrderStatusEnum, name="order_status"), default=OrderStatusEnum.created)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    status: Mapped[OrderStatusEnum] = mapped_column(SAEnum(OrderStatusEnum, name="order_status"), default=OrderStatusEnum.created, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        # Составной индекс для частого запроса "заказы пользователя с сортировкой по дате"
+        Index("ix_orders_user_id_created_at", "user_id", "created_at"),
+    )
 
 
 class OrderItem(Base):

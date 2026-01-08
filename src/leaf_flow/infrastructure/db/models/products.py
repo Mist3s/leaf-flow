@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import List
 
-from sqlalchemy import String, ForeignKey, UniqueConstraint, Numeric
+from sqlalchemy import String, ForeignKey, UniqueConstraint, Numeric, Index
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,6 +28,13 @@ class Product(Base):
 
     category: Mapped[Category] = relationship(back_populates="products")
     variants: Mapped[list["ProductVariant"]] = relationship(back_populates="product", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        # GIN-индекс для быстрого поиска по массиву тегов
+        Index("ix_products_tags_gin", "tags", postgresql_using="gin"),
+        # Индекс для поиска по названию (lower для case-insensitive)
+        Index("ix_products_name_lower", "name", postgresql_ops={"name": "varchar_pattern_ops"}),
+    )
 
 
 class ProductVariant(Base):

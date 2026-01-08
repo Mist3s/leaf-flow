@@ -20,7 +20,11 @@ class OrderRepository(Repository[Order]):
         return order
 
     async def get_with_items(self, order_id: str) -> Order | None:
-        stmt = select(Order).where(Order.id == order_id)
+        stmt = (
+            select(Order)
+            .options(selectinload(Order.items))
+            .where(Order.id == order_id)
+        )
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
     async def list_for_user(self, user_id: int, limit: int, offset: int) -> Sequence[Order]:

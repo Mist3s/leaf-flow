@@ -44,9 +44,14 @@ async def add_item(user_id: int, product_id: str, variant_id: str, quantity: int
 
 async def replace_items(user_id: int, items: list[tuple[str, str, int]], uow: UoW) -> CartEntity:
     cart = await uow.carts.get_or_create_by_user(user_id)
+    
+    # Батчевая загрузка всех вариантов за один запрос вместо N запросов
+    keys = [(product_id, variant_id) for product_id, variant_id, _ in items]
+    variants_map = await uow.product_variants.get_multiple(keys)
+    
     prepared: list[tuple[str, str, int, Decimal]] = []
     for product_id, variant_id, quantity in items:
-        variant = await uow.product_variants.get_for_product(product_id, variant_id)
+        variant = variants_map.get((product_id, variant_id))
         if not variant:
             raise ValueError("VARIANT_NOT_FOUND")
         prepared.append((product_id, variant_id, quantity, variant.price))
@@ -74,5 +79,3 @@ async def remove_item(user_id: int, product_id: str, variant_id: str, uow: UoW) 
     await uow.carts.remove_item(cart.id, product_id, variant_id)
     await uow.commit()
     return await get_cart(user_id, uow)
-
-
