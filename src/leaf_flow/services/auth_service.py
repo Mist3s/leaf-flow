@@ -343,3 +343,201 @@ async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
         expiresIn=access_ttl,
         refreshExpiresIn=settings.REFRESH_TOKEN_TTL_SECONDS,
     )
+
+
+async def link_telegram_to_user(
+    widget_data: dict,
+    current_user_id: int,
+    uow: UoW
+) -> UserEntity:
+    """
+    Привязывает Telegram-аккаунт к существующему пользователю.
+    
+    Если telegram_id уже привязан к другому аккаунту, возвращает ошибку.
+    Для слияния аккаунтов используйте merge_telegram_account.
+    
+    Args:
+        widget_data: Данные от Login Widget (id, first_name, auth_date, hash, ...)
+        current_user_id: ID текущего авторизованного пользователя
+        uow: Unit of Work
+        
+    Returns:
+        Обновлённая сущность пользователя
+        
+    Raises:
+        ValueError: Если данные невалидны, Telegram уже привязан или занят другим аккаунтом
+    """
+    # Валидация подписи и auth_date
+    if not verify_telegram_login_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
+        raise ValueError("INVALID_LOGIN_WIDGET_DATA")
+    
+    telegram_id = widget_data["id"]
+    first_name = widget_data["first_name"]
+    last_name = widget_data.get("last_name")
+    username = widget_data.get("username")
+    photo_url = widget_data.get("photo_url")
+    
+    # Получаем текущего пользователя
+    current_user = await uow.users.get(current_user_id)
+    if not current_user:
+        raise ValueError("USER_NOT_FOUND")
+    
+    # Проверяем, не привязан ли уже Telegram к этому пользователю
+    if current_user.telegram_id is not None:
+        raise ValueError("TELEGRAM_ALREADY_LINKED")
+    
+    # Проверяем, не занят ли этот telegram_id другим аккаунтом
+    existing_tg_user = await uow.users.get_by_telegram_id(telegram_id)
+    
+    if existing_tg_user:
+        if existing_tg_user.id == current_user_id:
+            raise ValueError("TELEGRAM_ALREADY_LINKED")
+        # Telegram привязан к другому аккаунту — нужно слияние
+        raise ValueError("TELEGRAM_LINKED_TO_ANOTHER_ACCOUNT")
+    
+    # Привязываем Telegram к текущему пользователю
+    current_user.telegram_id = telegram_id
+    current_user.username = username
+    current_user.photo_url = photo_url
+    # Обновляем имя только если у пользователя оно не задано или пустое
+    if not current_user.first_name:
+        current_user.first_name = first_name
+    if not current_user.last_name and last_name:
+        current_user.last_name = last_name
+    
+    await uow.commit()
+    return map_user_model_to_entity(current_user)
+
+
+async def merge_telegram_account(
+    widget_data: dict,
+    current_user_id: int,
+    uow: UoW
+) -> UserEntity:
+    """
+    Выполняет слияние аккаунтов: привязывает Telegram к текущему пользователю,
+    перенося данные со старого Telegram-аккаунта.
+    
+    Слияние:
+    - Заказы переносятся на текущего пользователя
+    - Корзина старого аккаунта удаляется
+    - Старый аккаунт удаляется
+    
+    Args:
+        widget_data: Данные от Login Widget (id, first_name, auth_date, hash, ...)
+        current_user_id: ID текущего авторизованного пользователя
+        uow: Unit of Work
+        
+    Returns:
+        Обновлённая сущность пользователя
+        
+    Raises:
+        ValueError: Если данные невалидны или слияние невозможно
+    """
+    # Валидация подписи и auth_date
+    if not verify_telegram_login_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
+        raise ValueError("INVALID_LOGIN_WIDGET_DATA")
+    
+    telegram_id = widget_data["id"]
+    first_name = widget_data["first_name"]
+    last_name = widget_data.get("last_name")
+    username = widget_data.get("username")
+    photo_url = widget_data.get("photo_url")
+    
+    # Получаем текущего пользователя
+    current_user = await uow.users.get(current_user_id)
+    if not current_user:
+        raise ValueError("USER_NOT_FOUND")
+    
+    # Проверяем, не привязан ли уже Telegram к этому пользователю
+    if current_user.telegram_id is not None:
+        raise ValueError("TELEGRAM_ALREADY_LINKED")
+    
+    # Проверяем, существует ли аккаунт с этим telegram_id
+    existing_tg_user = await uow.users.get_by_telegram_id(telegram_id)
+    
+    if not existing_tg_user:
+        # Нет аккаунта для слияния — просто привязываем
+        current_user.telegram_id = telegram_id
+        current_user.username = username
+        current_user.photo_url = photo_url
+        if not current_user.first_name:
+            current_user.first_name = first_name
+        if not current_user.last_name and last_name:
+            current_user.last_name = last_name
+        await uow.commit()
+        return map_user_model_to_entity(current_user)
+    
+    if existing_tg_user.id == current_user_id:
+        raise ValueError("TELEGRAM_ALREADY_LINKED")
+    
+    # === СЛИЯНИЕ АККАУНТОВ ===
+    # 1. Переносим заказы на текущего пользователя
+    await uow.orders.transfer_orders_to_user(
+        from_user_id=existing_tg_user.id,
+        to_user_id=current_user_id
+    )
+    
+    # 2. Очищаем корзину старого пользователя (удаляем её)
+    await uow.carts.delete_by_user_id(existing_tg_user.id)
+    
+    # 3. Отзываем все refresh токены старого пользователя
+    await uow.refresh_tokens.revoke_all_for_user(existing_tg_user.id, _utcnow())
+    
+    # 4. Удаляем старого пользователя и сразу применяем изменения,
+    #    чтобы освободить telegram_id до UPDATE
+    await uow.users.delete(existing_tg_user)
+    await uow.flush()
+    
+    # 5. Привязываем Telegram к текущему пользователю
+    current_user.telegram_id = telegram_id
+    current_user.username = username
+    current_user.photo_url = photo_url
+    if not current_user.first_name:
+        current_user.first_name = first_name
+    if not current_user.last_name and last_name:
+        current_user.last_name = last_name
+    
+    await uow.commit()
+    return map_user_model_to_entity(current_user)
+
+
+async def unlink_telegram_from_user(
+    current_user_id: int,
+    uow: UoW
+) -> UserEntity:
+    """
+    Отвязывает Telegram от аккаунта пользователя.
+    
+    Отвязка возможна только если у пользователя есть email и пароль,
+    чтобы он мог продолжить входить в аккаунт.
+    
+    Args:
+        current_user_id: ID текущего авторизованного пользователя
+        uow: Unit of Work
+        
+    Returns:
+        Обновлённая сущность пользователя
+        
+    Raises:
+        ValueError: Если у пользователя нет Telegram или нет email/пароля
+    """
+    current_user = await uow.users.get(current_user_id)
+    if not current_user:
+        raise ValueError("USER_NOT_FOUND")
+    
+    # Проверяем, привязан ли Telegram
+    if current_user.telegram_id is None:
+        raise ValueError("TELEGRAM_NOT_LINKED")
+    
+    # Проверяем, есть ли альтернативный способ входа (email + пароль)
+    if not current_user.email or not current_user.password_hash:
+        raise ValueError("CANNOT_UNLINK_NO_EMAIL_PASSWORD")
+    
+    # Отвязываем Telegram
+    current_user.telegram_id = None
+    current_user.username = None  # username связан с Telegram
+    current_user.photo_url = None  # фото тоже из Telegram
+    
+    await uow.commit()
+    return map_user_model_to_entity(current_user)

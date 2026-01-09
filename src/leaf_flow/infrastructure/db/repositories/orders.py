@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from leaf_flow.infrastructure.db.models.orders import Order, OrderItem
@@ -10,6 +10,21 @@ from leaf_flow.infrastructure.db.repositories.base import Repository
 class OrderRepository(Repository[Order]):
     def __init__(self, session: Session):
         super().__init__(session, Order)
+
+    async def transfer_orders_to_user(self, from_user_id: int, to_user_id: int) -> int:
+        """
+        Переносит все заказы от одного пользователя к другому.
+        
+        Returns:
+            Количество перенесённых заказов
+        """
+        stmt = (
+            update(Order)
+            .where(Order.user_id == from_user_id)
+            .values(user_id=to_user_id)
+        )
+        result = await self.session.execute(stmt)
+        return result.rowcount
 
     async def add_with_items(self, order: Order, items: list[OrderItem]) -> Order:
         self.session.add(order)

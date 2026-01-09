@@ -80,4 +80,19 @@ class CartRepository(Repository[Cart]):
             )
         )
 
+    async def delete_by_user_id(self, user_id: int) -> bool:
+        """
+        Удаляет корзину пользователя (вместе с товарами через CASCADE).
+        
+        Returns:
+            True если корзина была удалена, False если её не существовало
+        """
+        stmt = select(Cart).where(Cart.user_id == user_id)
+        result = await self.session.execute(stmt)
+        cart = result.scalar_one_or_none()
+        if cart:
+            await self.session.delete(cart)
+            return True
+        return False
+
 
