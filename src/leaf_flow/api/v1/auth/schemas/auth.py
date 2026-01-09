@@ -36,6 +36,20 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class TelegramLoginWidgetRequest(BaseModel):
+    """
+    Payload от Telegram Login Widget.
+    https://core.telegram.org/widgets/login
+    """
+    id: int
+    first_name: str
+    last_name: str | None = None
+    username: str | None = None
+    photo_url: str | None = None
+    auth_date: int
+    hash: str
+
+
 class AuthResponse(BaseModel):
     tokens: AuthTokens
     user: UserProfile

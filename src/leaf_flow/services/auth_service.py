@@ -10,6 +10,7 @@ from leaf_flow.infrastructure.db.models.users import User
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.security import (
     verify_telegram_webapp_request,
+    verify_telegram_login_widget,
     create_access_token,
     generate_refresh_token,
     hash_password,
@@ -81,6 +82,78 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
     await uow.refresh_tokens.add(refresh)
     await uow.commit()
 
+    tokens = AuthTokens(
+        accessToken=access_token,
+        refreshToken=refresh_raw,
+        expiresIn=access_ttl,
+        refreshExpiresIn=refresh_expires_in,
+    )
+    return tokens, map_user_model_to_entity(user)
+
+
+async def exchange_login_widget_for_tokens(
+    widget_data: dict,
+    uow: UoW
+) -> tuple[AuthTokens, UserEntity]:
+    """
+    Авторизация через Telegram Login Widget.
+    
+    Валидирует данные от Login Widget, создаёт/находит пользователя
+    и возвращает токены авторизации.
+    
+    Args:
+        widget_data: Данные от Login Widget (id, first_name, auth_date, hash, ...)
+        uow: Unit of Work
+        
+    Returns:
+        Кортеж из токенов авторизации и сущности пользователя
+        
+    Raises:
+        ValueError: Если данные невалидны или устарели
+    """
+    # Валидация подписи и auth_date
+    if not verify_telegram_login_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
+        raise ValueError("INVALID_LOGIN_WIDGET_DATA")
+    
+    telegram_id = widget_data["id"]
+    first_name = widget_data["first_name"]
+    last_name = widget_data.get("last_name")
+    username = widget_data.get("username")
+    photo_url = widget_data.get("photo_url")
+    
+    # Ищем или создаём пользователя
+    user = await uow.users.get_by_telegram_id(telegram_id)
+    
+    if user is None:
+        user = User(
+            telegram_id=telegram_id,
+            first_name=first_name,
+            last_name=last_name,
+            username=username,
+            photo_url=photo_url,
+        )
+        await uow.users.add(user)
+        await uow.flush()
+    else:
+        # Обновляем данные существующего пользователя
+        user.first_name = first_name
+        user.last_name = last_name
+        user.username = username
+        user.photo_url = photo_url
+        await uow.flush()
+    
+    # Генерируем токены
+    access_token, access_ttl = create_access_token(user.id)
+    refresh_raw = generate_refresh_token()
+    refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
+    refresh = RefreshToken(
+        user_id=user.id,
+        token=refresh_raw,
+        expires_at=_utcnow() + timedelta(seconds=refresh_expires_in),
+    )
+    await uow.refresh_tokens.add(refresh)
+    await uow.commit()
+    
     tokens = AuthTokens(
         accessToken=access_token,
         refreshToken=refresh_raw,

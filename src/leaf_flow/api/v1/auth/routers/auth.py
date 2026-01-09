@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from leaf_flow.api.deps import uow_dep, get_current_user
 from leaf_flow.api.v1.auth.schemas.auth import (
     TelegramInitRequest,
+    TelegramLoginWidgetRequest,
     AuthResponse,
     AuthTokens,
     UserProfile,
@@ -14,6 +15,7 @@ from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.auth_service import (
     exchange_init_data_for_tokens,
+    exchange_login_widget_for_tokens,
     refresh_tokens,
     register_email_user,
     authenticate_email_user,
@@ -43,6 +45,40 @@ async def telegram_init(payload: TelegramInitRequest, uow: UoW = Depends(uow_dep
         ),
     )
     return resp
+
+
+@router.post("/telegram/login-widget", response_model=AuthResponse, responses={400: {"model": ErrorResponse}})
+async def telegram_login_widget(
+    payload: TelegramLoginWidgetRequest,
+    uow: UoW = Depends(uow_dep)
+) -> AuthResponse:
+    """
+    Авторизация через Telegram Login Widget.
+    
+    Принимает payload от виджета, валидирует подпись,
+    создаёт или находит пользователя и возвращает токены.
+    """
+    try:
+        tokens, user = await exchange_login_widget_for_tokens(
+            widget_data=payload.model_dump(),
+            uow=uow,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+    return AuthResponse(
+        tokens=AuthTokens.model_validate(tokens.model_dump()),
+        user=UserProfile(
+            id=str(user.id),
+            telegramId=user.telegram_id,
+            email=user.email,
+            firstName=user.first_name,
+            lastName=user.last_name,
+            username=user.username,
+            languageCode=user.language_code,
+            photoUrl=user.photo_url,
+        ),
+    )
 
 
 @router.post("/refresh", response_model=AuthTokens, responses={401: {"model": ErrorResponse}})

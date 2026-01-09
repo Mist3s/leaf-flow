@@ -35,3 +35,4 @@ async def ensure_support_topic(
     await uow.flush()
     await uow.commit()
     return new_topic, True
+

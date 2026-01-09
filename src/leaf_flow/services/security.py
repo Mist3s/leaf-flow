@@ -57,6 +57,54 @@ def verify_telegram_webapp_request(encoded_init_data: str, bot_token: str) -> bo
     return calculated_hash == hash_
 
 
+def verify_telegram_login_widget(data: dict[str, Any], bot_token: str, max_age_seconds: int = 86400) -> bool:
+    """
+    Проверяет подлинность данных от Telegram Login Widget.
+    
+    Алгоритм отличается от Mini Apps (initData):
+    - Секретный ключ = SHA256(bot_token)
+    - data_check_string = отсортированные параметры без hash
+    
+    Args:
+        data: Словарь с данными от Login Widget (id, first_name, auth_date, hash, ...)
+        bot_token: Токен Telegram бота
+        max_age_seconds: Максимальный возраст auth_date (по умолчанию 24 часа)
+        
+    Returns:
+        True если данные валидны, False иначе
+    """
+    data_copy = dict(data)
+    hash_ = data_copy.pop("hash", None)
+    if not hash_:
+        return False
+    
+    # Проверка auth_date на актуальность
+    auth_date = data_copy.get("auth_date")
+    if auth_date:
+        try:
+            auth_timestamp = int(auth_date)
+            current_timestamp = int(_utcnow().timestamp())
+            if current_timestamp - auth_timestamp > max_age_seconds:
+                return False
+        except (ValueError, TypeError):
+            return False
+    
+    # Формируем data_check_string: отсортированные key=value через \n
+    data_check_string = "\n".join(
+        f"{k}={v}" for k, v in sorted(data_copy.items(), key=itemgetter(0))
+        if v is not None  # Пропускаем None значения
+    )
+    
+    # Для Login Widget: секретный ключ = SHA256(bot_token)
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    
+    calculated_hash = hmac.new(
+        key=secret_key, msg=data_check_string.encode(), digestmod=hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(calculated_hash, hash_)
+
+
 def hash_password(password: str) -> str:
     """
     Хеширует пароль с использованием bcrypt.
