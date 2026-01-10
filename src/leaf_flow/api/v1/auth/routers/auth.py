@@ -10,6 +10,9 @@ from leaf_flow.api.v1.auth.schemas.auth import (
     ErrorResponse,
     RegisterRequest,
     LoginRequest,
+    UpdateProfileRequest,
+    ChangePasswordRequest,
+    SetEmailRequest,
 )
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
@@ -22,6 +25,9 @@ from leaf_flow.services.auth_service import (
     refresh_tokens,
     register_email_user,
     authenticate_email_user,
+    update_user_profile,
+    change_user_password,
+    set_user_email,
 )
 
 
@@ -308,6 +314,135 @@ async def profile(user: UserEntity = Depends(get_current_user)) -> UserProfile:
         username=user.username,
         languageCode=user.language_code,
         photoUrl=user.photo_url,
+    )
+
+
+@router.patch("/profile", response_model=UserProfile, responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
+async def update_profile(
+    payload: UpdateProfileRequest,
+    user: UserEntity = Depends(get_current_user),
+    uow: UoW = Depends(uow_dep)
+) -> UserProfile:
+    """
+    Обновляет профиль пользователя (имя, фамилия, email).
+    
+    Передавайте только те поля, которые нужно изменить.
+    """
+    try:
+        updated_user = await update_user_profile(
+            current_user_id=user.id,
+            first_name=payload.firstName,
+            last_name=payload.lastName,
+            email=payload.email,
+            uow=uow,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if error_message == "EMAIL_ALREADY_EXISTS":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Пользователь с таким email уже существует"
+            )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
+    
+    return UserProfile(
+        id=str(updated_user.id),
+        telegramId=updated_user.telegram_id,
+        email=updated_user.email,
+        firstName=updated_user.first_name,
+        lastName=updated_user.last_name,
+        username=updated_user.username,
+        languageCode=updated_user.language_code,
+        photoUrl=updated_user.photo_url,
+    )
+
+
+@router.post("/password", response_model=UserProfile, responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
+async def change_password(
+    payload: ChangePasswordRequest,
+    user: UserEntity = Depends(get_current_user),
+    uow: UoW = Depends(uow_dep)
+) -> UserProfile:
+    """
+    Изменяет или создаёт пароль пользователя.
+    
+    - Если пароль уже установлен, требуется currentPassword
+    - Если пароля нет (Telegram-пользователь), currentPassword не нужен
+    """
+    try:
+        updated_user = await change_user_password(
+            current_user_id=user.id,
+            current_password=payload.currentPassword,
+            new_password=payload.newPassword,
+            uow=uow,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if error_message == "CURRENT_PASSWORD_REQUIRED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Для изменения пароля необходимо указать текущий пароль"
+            )
+        if error_message == "INVALID_CURRENT_PASSWORD":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный текущий пароль"
+            )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
+    
+    return UserProfile(
+        id=str(updated_user.id),
+        telegramId=updated_user.telegram_id,
+        email=updated_user.email,
+        firstName=updated_user.first_name,
+        lastName=updated_user.last_name,
+        username=updated_user.username,
+        languageCode=updated_user.language_code,
+        photoUrl=updated_user.photo_url,
+    )
+
+
+@router.post("/email", response_model=UserProfile, responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
+async def set_email(
+    payload: SetEmailRequest,
+    user: UserEntity = Depends(get_current_user),
+    uow: UoW = Depends(uow_dep)
+) -> UserProfile:
+    """
+    Устанавливает email и пароль для пользователя без email (Telegram-пользователь).
+    
+    После установки email пользователь сможет входить как через Telegram, так и по email/паролю.
+    """
+    try:
+        updated_user = await set_user_email(
+            current_user_id=user.id,
+            email=payload.email,
+            password=payload.password,
+            uow=uow,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if error_message == "EMAIL_ALREADY_SET":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email уже установлен. Используйте PATCH /profile для изменения email"
+            )
+        if error_message == "EMAIL_ALREADY_EXISTS":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Пользователь с таким email уже существует"
+            )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
+    
+    return UserProfile(
+        id=str(updated_user.id),
+        telegramId=updated_user.telegram_id,
+        email=updated_user.email,
+        firstName=updated_user.first_name,
+        lastName=updated_user.last_name,
+        username=updated_user.username,
+        languageCode=updated_user.language_code,
+        photoUrl=updated_user.photo_url,
     )
 
 

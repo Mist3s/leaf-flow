@@ -541,3 +541,134 @@ async def unlink_telegram_from_user(
     
     await uow.commit()
     return map_user_model_to_entity(current_user)
+
+
+async def update_user_profile(
+    current_user_id: int,
+    first_name: str | None,
+    last_name: str | None,
+    email: str | None,
+    uow: UoW
+) -> UserEntity:
+    """
+    Обновляет профиль пользователя (имя, фамилия, email).
+    
+    Args:
+        current_user_id: ID текущего пользователя
+        first_name: Новое имя (None = не менять)
+        last_name: Новая фамилия (None = не менять)
+        email: Новый email (None = не менять)
+        uow: Unit of Work
+        
+    Returns:
+        Обновлённая сущность пользователя
+        
+    Raises:
+        ValueError: Если пользователь не найден или email уже занят
+    """
+    current_user = await uow.users.get(current_user_id)
+    if not current_user:
+        raise ValueError("USER_NOT_FOUND")
+    
+    # Обновляем имя
+    if first_name is not None:
+        current_user.first_name = first_name
+    
+    # Обновляем фамилию
+    if last_name is not None:
+        current_user.last_name = last_name
+    
+    # Обновляем email
+    if email is not None and email != current_user.email:
+        # Проверяем, не занят ли email другим пользователем
+        existing_user = await uow.users.get_by_email(email)
+        if existing_user and existing_user.id != current_user_id:
+            raise ValueError("EMAIL_ALREADY_EXISTS")
+        current_user.email = email
+    
+    await uow.commit()
+    return map_user_model_to_entity(current_user)
+
+
+async def change_user_password(
+    current_user_id: int,
+    current_password: str | None,
+    new_password: str,
+    uow: UoW
+) -> UserEntity:
+    """
+    Изменяет или создаёт пароль пользователя.
+    
+    - Если пароль уже установлен, требуется current_password для проверки
+    - Если пароля нет (Telegram-пользователь), current_password не нужен
+    
+    Args:
+        current_user_id: ID текущего пользователя
+        current_password: Текущий пароль (обязателен, если пароль уже установлен)
+        new_password: Новый пароль
+        uow: Unit of Work
+        
+    Returns:
+        Обновлённая сущность пользователя
+        
+    Raises:
+        ValueError: Если текущий пароль неверен или пользователь не найден
+    """
+    current_user = await uow.users.get(current_user_id)
+    if not current_user:
+        raise ValueError("USER_NOT_FOUND")
+    
+    # Если пароль уже установлен, проверяем текущий пароль
+    if current_user.password_hash:
+        if not current_password:
+            raise ValueError("CURRENT_PASSWORD_REQUIRED")
+        if not verify_password(current_password, current_user.password_hash):
+            raise ValueError("INVALID_CURRENT_PASSWORD")
+    
+    # Устанавливаем новый пароль
+    current_user.password_hash = hash_password(new_password)
+    
+    await uow.commit()
+    return map_user_model_to_entity(current_user)
+
+
+async def set_user_email(
+    current_user_id: int,
+    email: str,
+    password: str,
+    uow: UoW
+) -> UserEntity:
+    """
+    Устанавливает email и пароль для пользователя без email (Telegram-пользователь).
+    
+    Args:
+        current_user_id: ID текущего пользователя
+        email: Email для привязки
+        password: Пароль для нового способа входа
+        uow: Unit of Work
+        
+    Returns:
+        Обновлённая сущность пользователя
+        
+    Raises:
+        ValueError: Если email уже есть, занят другим пользователем, или пользователь не найден
+    """
+    current_user = await uow.users.get(current_user_id)
+    if not current_user:
+        raise ValueError("USER_NOT_FOUND")
+    
+    # Проверяем, что email ещё не установлен
+    if current_user.email:
+        raise ValueError("EMAIL_ALREADY_SET")
+    
+    # Проверяем, не занят ли email другим пользователем
+    existing_user = await uow.users.get_by_email(email)
+    if existing_user:
+        raise ValueError("EMAIL_ALREADY_EXISTS")
+    
+    # Устанавливаем email и пароль
+    current_user.email = email
+    current_user.password_hash = hash_password(password)
+    
+    await uow.commit()
+    return map_user_model_to_entity(current_user)

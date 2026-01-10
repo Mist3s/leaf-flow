@@ -64,3 +64,27 @@ class ErrorResponse(BaseModel):
     code: str | None = None
 
 
+class UpdateProfileRequest(BaseModel):
+    """Запрос на обновление профиля пользователя."""
+    firstName: str | None = None
+    lastName: str | None = None
+    email: EmailStr | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """
+    Запрос на изменение или создание пароля.
+    
+    - Если пароль уже установлен, требуется currentPassword
+    - Если пароля нет (Telegram-пользователь), currentPassword не нужен
+    """
+    currentPassword: str | None = Field(None, description="Текущий пароль (обязателен, если пароль уже установлен)")
+    newPassword: str = Field(..., min_length=8, description="Новый пароль (минимум 8 символов)")
+
+
+class SetEmailRequest(BaseModel):
+    """Запрос на установку email (для пользователей без email)."""
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Пароль для нового email-аккаунта")
+
+
