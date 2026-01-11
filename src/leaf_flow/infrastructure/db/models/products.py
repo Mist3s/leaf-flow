@@ -95,6 +95,10 @@ class Product(Base):
         index=True,
         nullable=False,
     )
+    attribute_values: Mapped[list["ProductAttributeValue"]] = relationship(
+        secondary="product_attribute_values",
+        viewonly=True,
+    )
 
     __table_args__ = (
         # GIN-индекс для быстрого поиска по массиву тегов
@@ -148,6 +152,29 @@ class ProductVariant(Base):
             "weight",
             name="uq_product_variant_weight_per_product"
         ),
+    )
+
+
+class ProductAttributeValueLink(Base):
+    __tablename__ = "product_attribute_values"
+
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    attribute_value_id: Mapped[int] = mapped_column(
+        ForeignKey("product_attributes_values.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("idx_pavlink_value_product", "attribute_value_id", "product_id"),
+        Index("idx_pavlink_product_value", "product_id", "attribute_value_id"),
     )
 
 
