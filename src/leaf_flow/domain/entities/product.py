@@ -1,6 +1,11 @@
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
-from typing import List
+from typing import List, Literal
+
+
+AttributeKind = Literal["single", "multi", "bool", "range"]
+UIHint = Literal["chips", "radio", "toggle", "scale"]
 
 
 @dataclass(slots=True)
@@ -8,6 +13,34 @@ class ProductVariantEntity:
     id: str
     weight: str
     price: Decimal
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    sort_order: int
+
+
+@dataclass(slots=True)
+class ProductAttributesValue:
+    id: int
+    attribute_id: int
+    name: str
+    slug: str
+    sort_order: int
+    is_active: bool
+
+
+@dataclass(slots=True)
+class ProductAttributes:
+    id: int
+    code: str
+    name: str
+    description: str
+    sort_order: int
+    is_active: bool
+    created_at: datetime
+    kind: AttributeKind
+    ui_hint: UIHint
+    values: List[ProductAttributesValue]
 
 
 @dataclass(slots=True)
@@ -19,5 +52,9 @@ class ProductEntity:
     tags: List[str]
     image: str
     variants: List[ProductVariantEntity]
-
-
+    product_type_code: str
+    attribute_values: List[ProductAttributes]
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    sort_order: int

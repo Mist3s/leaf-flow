@@ -29,5 +29,3 @@ class OrderEntity:
     comment: Optional[str] = None
     status: OrderStatus = "created"
     created_at: Optional[datetime] = None
-
-

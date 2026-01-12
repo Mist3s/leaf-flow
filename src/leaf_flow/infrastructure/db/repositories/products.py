@@ -3,7 +3,7 @@ from typing import Sequence
 from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session, selectinload
 
-from leaf_flow.infrastructure.db.models.products import Product, ProductVariant, Category
+from leaf_flow.infrastructure.db.models.products import Product, ProductVariant, Category, ProductAttributeValue
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
@@ -22,32 +22,47 @@ class ProductRepository(Repository[Product]):
         limit: int,
         offset: int,
     ) -> tuple[int, Sequence[Product]]:
-        stmt = select(Product).options(selectinload(Product.variants))
+        stmt = (
+            select(Product)
+            .options(
+                selectinload(Product.variants),
+                selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
+            )
+        )
+
         if category_slug:
             stmt = stmt.where(Product.category_slug == category_slug)
+
         if search:
             search_lower = search.lower()
             like_pattern = f"%{search_lower}%"
-            # Используем ILIKE для названия (быстрее с индексом)
-            # и оператор @> (contains) для тегов с GIN-индексом
             stmt = stmt.where(
                 or_(
                     Product.name.ilike(like_pattern),
-                    Product.tags.contains([search_lower]),  # использует GIN индекс
+                    Product.tags.contains([search_lower]),
                 )
             )
-        # Сначала получаем общее количество без LIMIT/OFFSET
+
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await self.session.execute(count_stmt)).scalar_one()
-        
-        # Затем получаем данные с пагинацией
-        rows = (await self.session.execute(
-            stmt.order_by(Product.name).limit(limit).offset(offset)
-        )).scalars().all()
+
+        rows = (
+            await self.session.execute(
+                stmt.order_by(Product.name).limit(limit).offset(offset)
+            )
+        ).scalars().all()
+
         return total, rows
 
     async def get_with_variants(self, product_id: str) -> Product | None:
-        stmt = select(Product).options(selectinload(Product.variants)).where(Product.id == product_id)
+        stmt = (
+            select(Product)
+            .where(Product.id == product_id)
+            .options(
+                selectinload(Product.variants),
+                selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
+            )
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
