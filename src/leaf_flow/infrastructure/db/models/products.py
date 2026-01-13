@@ -99,6 +99,10 @@ class Product(Base):
         secondary="product_attribute_values",
         viewonly=True,
     )
+    brew_profiles: Mapped[list["ProductBrewProfile"]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     __table_args__ = (
         # GIN-индекс для быстрого поиска по массиву тегов
@@ -325,4 +329,52 @@ class ProductAttributeValueSynonym(Base):
             "idx_pav_synonym_synonym",
             "synonym"
         ),
+    )
+
+
+class ProductBrewProfile(Base):
+    __tablename__ = "product_brew_profiles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    method: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )
+    teaware: Mapped[str] = mapped_column(
+        String(128), nullable=False
+    )
+    temperature: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )
+    brew_time: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )
+    note: Mapped[str | None] = mapped_column(Text)
+    sort_order: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id", "method", "teaware", "temperature", "brew_time",
+            name="uq_product_brew_profile"
+        ),
+        Index(
+            "idx_pbp_product_sort_active",
+            "product_id", "sort_order", "id",
+            postgresql_where=(is_active.is_(True))
+        )
     )

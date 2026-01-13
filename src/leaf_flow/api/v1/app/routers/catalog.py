@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 
 from leaf_flow.api.deps import uow_dep
-from leaf_flow.api.v1.app.schemas.catalog import Category, Product, CategoryListResponse, ProductListResponse
+from leaf_flow.api.v1.app.schemas.catalog import Category, Product, CategoryListResponse, ProductListResponse, \
+    ProductDetail
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import catalog_service
 
@@ -41,19 +42,15 @@ async def list_products(
     )
 
 
-@router.get("/products/{productId}", response_model=Product, responses={404: {"description": "Not found"}})
-async def get_product(productId: str, uow: UoW = Depends(uow_dep)) -> Product:
+@router.get(
+    "/products/{productId}",
+    response_model=ProductDetail,
+    responses={404: {"description": "Not found"}},
+)
+async def get_product(productId: str, uow: UoW = Depends(uow_dep)) -> ProductDetail:
     product = await catalog_service.get_product(uow, productId)
+
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return Product(
-        id=product.id,
-        name=product.name,
-        description=product.description,
-        category=product.category_slug,
-        tags=product.tags,
-        image=product.image,
-        variants=[v for v in product.variants],
-    )
 
-
+    return ProductDetail.model_validate(product, from_attributes=True)

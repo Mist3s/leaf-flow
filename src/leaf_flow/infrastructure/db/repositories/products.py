@@ -27,6 +27,7 @@ class ProductRepository(Repository[Product]):
             .options(
                 selectinload(Product.variants),
                 selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.brew_profiles),
             )
         )
 
@@ -61,6 +62,7 @@ class ProductRepository(Repository[Product]):
             .options(
                 selectinload(Product.variants),
                 selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
+                selectinload(Product.brew_profiles),
             )
         )
         result = await self.session.execute(stmt)

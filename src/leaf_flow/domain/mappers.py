@@ -5,7 +5,7 @@ from leaf_flow.domain.entities.product import (
     ProductEntity,
     ProductVariantEntity,
     ProductAttributes,
-    ProductAttributesValue,
+    ProductAttributesValue, BrewProfileEntity,
 )
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.domain.entities.cart import CartItemEntity
@@ -61,6 +61,20 @@ def map_product_attribute_value_model_to_entity(v: ProductAttributeValueModel) -
 def _enum_to_str(x):
     # Поддержка SQLAlchemy Enum: AttributeKind/UIHint могут быть enum с .value
     return getattr(x, "value", x)
+
+def map_brew_profile_model_to_entity(p) -> BrewProfileEntity:
+    return BrewProfileEntity(
+        id=p.id,
+        method=p.method,
+        teaware=p.teaware,
+        temperature=p.temperature,
+        brew_time=p.brew_time,
+        note=p.note,
+        sort_order=p.sort_order,
+        is_active=p.is_active,
+        created_at=p.created_at,
+        updated_at=p.updated_at,
+    )
 
 
 def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
@@ -128,6 +142,10 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
         created_at=product.created_at,
         updated_at=product.updated_at,
         sort_order=getattr(product, "sort_order", 0),
+        brew_profiles=sorted(
+            [map_brew_profile_model_to_entity(x) for x in getattr(product, "brew_profiles", [])],
+            key=lambda x: (x.sort_order, x.id),
+        ),
     )
 
 

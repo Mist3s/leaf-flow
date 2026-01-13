@@ -44,15 +44,30 @@ class ProductAttributes:
 
 
 @dataclass(slots=True)
+class BrewProfileEntity:
+    id: int
+    method: str
+    teaware: str
+    temperature: str
+    brew_time: str
+    note: str | None
+    sort_order: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(slots=True)
 class ProductEntity:
     id: str
     name: str
     description: str
     category_slug: str
-    tags: List[str]
     image: str
-    variants: List[ProductVariantEntity]
     product_type_code: str
+    tags: List[str]
+    variants: List[ProductVariantEntity]
+    brew_profiles: list[BrewProfileEntity]
     attribute_values: List[ProductAttributes]
     is_active: bool
     created_at: datetime
