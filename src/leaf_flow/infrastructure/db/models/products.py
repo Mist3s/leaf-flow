@@ -353,6 +353,9 @@ class ProductBrewProfile(Base):
     brew_time: Mapped[str] = mapped_column(
         String(64), nullable=False
     )
+    weight: Mapped[str] = mapped_column(
+        String(64), nullable=False
+    )
     note: Mapped[str | None] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0"

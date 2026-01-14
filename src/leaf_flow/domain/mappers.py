@@ -69,6 +69,7 @@ def map_brew_profile_model_to_entity(p) -> BrewProfileEntity:
         teaware=p.teaware,
         temperature=p.temperature,
         brew_time=p.brew_time,
+        weight=p.weight,
         note=p.note,
         sort_order=p.sort_order,
         is_active=p.is_active,

@@ -50,6 +50,7 @@ class BrewProfileEntity:
     teaware: str
     temperature: str
     brew_time: str
+    weight: str
     note: str | None
     sort_order: int
     is_active: bool
