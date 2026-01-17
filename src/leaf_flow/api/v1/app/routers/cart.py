@@ -72,7 +72,11 @@ async def add_item(
 ) -> CartSchema:
     try:
         cart = await cart_service.add_item(
-            user.id, payload.productId, payload.variantId, payload.quantity or 1, uow
+            user.id,
+            payload.productId,
+            payload.variantId,
+            payload.quantity or 1,
+            uow
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -104,8 +108,16 @@ async def replace_items(
     uow: UoW = Depends(uow_dep)
 ) -> CartSchema:
     try:
-        items_tuples = [(it.productId, it.variantId, it.quantity or 1) for it in payload.items]
-        cart = await cart_service.replace_items(user.id, items_tuples, uow)
+        items_tuples = [
+            (
+                it.productId,
+                it.variantId,
+                it.quantity or 1
+            ) for it in payload.items
+        ]
+        cart = await cart_service.replace_items(
+            user.id, items_tuples, uow
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return CartSchema(
@@ -137,7 +149,9 @@ async def update_quantity(
     if quantity is None:
         raise HTTPException(status_code=400, detail="quantity is required")
     try:
-        cart = await cart_service.set_quantity(user.id, product_id, variant_id, int(quantity), uow)
+        cart = await cart_service.set_quantity(
+            user.id, product_id, variant_id, int(quantity), uow
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return CartSchema(
@@ -180,5 +194,3 @@ async def remove_item(
         totalPrice=cart.total_price,
         updatedAt=None,
     )
-
-

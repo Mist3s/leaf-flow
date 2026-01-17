@@ -1,6 +1,9 @@
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.domain.entities.product import ProductEntity
-from leaf_flow.domain.mappers import map_product_model_to_entity
+from leaf_flow.domain.mappers import (
+    map_product_model_to_entity,
+    map_product_detail_model_to_entity
+)
 
 
 async def list_categories(uow: UoW) -> list[dict[str, str]]:
@@ -20,6 +23,4 @@ async def list_products(
 
 async def get_product(uow: UoW, product_id: str) -> ProductEntity | None:
     p = await uow.products.get_with_variants(product_id)
-    return map_product_model_to_entity(p) if p else None
-
-
+    return map_product_detail_model_to_entity(p) if p else None

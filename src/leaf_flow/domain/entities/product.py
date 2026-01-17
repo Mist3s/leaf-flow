@@ -20,7 +20,7 @@ class ProductVariantEntity:
 
 
 @dataclass(slots=True)
-class ProductAttributesValue:
+class ProductAttributesValueEntity:
     id: int
     attribute_id: int
     name: str
@@ -30,7 +30,7 @@ class ProductAttributesValue:
 
 
 @dataclass(slots=True)
-class ProductAttributes:
+class ProductAttributesEntity:
     id: int
     code: str
     name: str
@@ -40,7 +40,7 @@ class ProductAttributes:
     created_at: datetime
     kind: AttributeKind
     ui_hint: UIHint
-    values: List[ProductAttributesValue]
+    values: List[ProductAttributesValueEntity]
 
 
 @dataclass(slots=True)
@@ -59,7 +59,7 @@ class BrewProfileEntity:
 
 
 @dataclass(slots=True)
-class ProductEntity:
+class ProductDetailEntity:
     id: str
     name: str
     description: str
@@ -69,7 +69,22 @@ class ProductEntity:
     tags: List[str]
     variants: List[ProductVariantEntity]
     brew_profiles: list[BrewProfileEntity]
-    attribute_values: List[ProductAttributes]
+    attribute_values: List[ProductAttributesEntity]
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    sort_order: int
+
+
+@dataclass(slots=True)
+class ProductEntity:
+    id: str
+    name: str
+    category_slug: str
+    image: str
+    product_type_code: str
+    tags: List[str]
+    variants: List[ProductVariantEntity]
     is_active: bool
     created_at: datetime
     updated_at: datetime

@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Sequence
 
 from leaf_flow.domain.entities.product import ProductEntity, ProductVariantEntity
-from leaf_flow.domain.mappers import map_product_model_to_entity, map_product_variant_model_to_entity
+from leaf_flow.domain.mappers import map_product_detail_model_to_entity, map_product_variant_model_to_entity
 from leaf_flow.infrastructure.db.models.products import Product, ProductVariant
 from leaf_flow.infrastructure.db.uow import UoW
 
@@ -69,7 +69,7 @@ async def create_product(
     await uow.products.add(product)
     await uow.flush()
     await uow.commit()
-    return map_product_model_to_entity(product)
+    return map_product_detail_model_to_entity(product)
 
 
 async def update_product(
@@ -131,7 +131,7 @@ async def update_product(
         product.variants = updated_variants
 
     await uow.commit()
-    return map_product_model_to_entity(product)
+    return map_product_detail_model_to_entity(product)
 
 
 async def add_product_variant(

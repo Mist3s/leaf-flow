@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Path
 
 from leaf_flow.api.deps import uow_dep
 from leaf_flow.api.v1.app.schemas.catalog import Category, Product, CategoryListResponse, ProductListResponse, \
@@ -13,7 +13,14 @@ router = APIRouter()
 @router.get("/categories", response_model=CategoryListResponse)
 async def list_categories(uow: UoW = Depends(uow_dep)) -> CategoryListResponse:
     items = await catalog_service.list_categories(uow)
-    return CategoryListResponse(items=[Category(id=i["id"], label=i["label"]) for i in items])
+    return CategoryListResponse(
+        items=[
+            Category(
+                id=i["id"],
+                label=i["label"]
+            ) for i in items
+        ]
+    )
 
 
 @router.get("/products", response_model=ProductListResponse)
@@ -24,20 +31,14 @@ async def list_products(
     offset: int = Query(0, ge=0),
     uow: UoW = Depends(uow_dep),
 ) -> ProductListResponse:
-    total, items = await catalog_service.list_products(uow, category, search, limit, offset)
+    total, items = await catalog_service.list_products(
+        uow, category, search, limit, offset
+    )
     return ProductListResponse(
         total=total,
         items=[
-            Product(
-                id=p.id,
-                name=p.name,
-                description=p.description,
-                category=p.category_slug,
-                tags=p.tags,
-                image=p.image,
-                variants=[v for v in p.variants],
-            )
-            for p in items
+            Product.model_validate(product, from_attributes=True)
+            for product in items
         ],
     )
 
@@ -47,10 +48,16 @@ async def list_products(
     response_model=ProductDetail,
     responses={404: {"description": "Not found"}},
 )
-async def get_product(productId: str, uow: UoW = Depends(uow_dep)) -> ProductDetail:
-    product = await catalog_service.get_product(uow, productId)
+async def get_product(
+    product_id: str = Path(..., alias="productId"),
+    uow: UoW = Depends(uow_dep)
+) -> ProductDetail:
+    product = await catalog_service.get_product(uow, product_id)
 
     if not product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
 
     return ProductDetail.model_validate(product, from_attributes=True)

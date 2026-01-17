@@ -22,6 +22,7 @@ class OrderEntity:
     id: str
     customer_name: str
     phone: str
+    user_id: int
     delivery: DeliveryMethod
     total: Decimal
     items: List[OrderItemEntity]

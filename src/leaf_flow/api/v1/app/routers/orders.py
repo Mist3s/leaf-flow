@@ -48,7 +48,10 @@ async def create_order(
     try:
         delivery = DeliveryMethodEnum(payload.delivery)
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid delivery method")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid delivery method"
+        )
     try:
         order = await order_service.create_order(
             user_id=user.id,
@@ -94,14 +97,23 @@ async def list_orders(
 
 @router.get("/{orderId}", response_model=OrderDetails)
 async def get_order(
-    orderId: str = Path(...),
+    order_id: str = Path(..., alias="orderId"),
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep),
 ) -> OrderDetails:
-    order_tuple = await order_service.get_order(orderId, uow)
+    order_tuple = await order_service.get_order(order_id, uow)
     order = order_tuple[0]
     if not order:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+
+    if order.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
+        )
     
     # Загружаем названия продуктов и вариантов
     names_map = await _load_product_and_variant_names(order.items, uow)
@@ -118,8 +130,14 @@ async def get_order(
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
-                productName=names_map.get((it.product_id, it.variant_id), ("", ""))[0],
-                variantWeight=names_map.get((it.product_id, it.variant_id), ("", ""))[1],
+                productName=names_map.get(
+                    (it.product_id, it.variant_id),
+                    ("", "")
+                )[0],
+                variantWeight=names_map.get(
+                    (it.product_id, it.variant_id),
+                    ("", "")
+                )[1],
             )
             for it in order.items
         ],
@@ -128,5 +146,3 @@ async def get_order(
         status=order.status,
         createdAt=order.created_at,
     )
-
-

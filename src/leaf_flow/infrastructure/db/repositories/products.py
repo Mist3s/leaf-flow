@@ -3,7 +3,9 @@ from typing import Sequence
 from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session, selectinload
 
-from leaf_flow.infrastructure.db.models.products import Product, ProductVariant, Category, ProductAttributeValue
+from leaf_flow.infrastructure.db.models.products import (
+    Product, ProductVariant, Category, ProductAttributeValue
+)
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
@@ -25,9 +27,7 @@ class ProductRepository(Repository[Product]):
         stmt = (
             select(Product)
             .options(
-                selectinload(Product.variants),
-                selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
-                selectinload(Product.brew_profiles),
+                selectinload(Product.variants)
             )
         )
 
@@ -40,6 +40,7 @@ class ProductRepository(Repository[Product]):
             stmt = stmt.where(
                 or_(
                     Product.name.ilike(like_pattern),
+                    Product.description.ilike(like_pattern),
                     Product.tags.contains([search_lower]),
                 )
             )
@@ -75,7 +76,11 @@ class ProductRepository(Repository[Product]):
         """
         if not product_ids:
             return {}
-        stmt = select(Product).options(selectinload(Product.variants)).where(Product.id.in_(product_ids))
+        stmt = select(Product).options(
+            selectinload(Product.variants)
+        ).where(
+            Product.id.in_(product_ids)
+        )
         result = await self.session.execute(stmt)
         products = result.scalars().all()
         return {p.id: p for p in products}
@@ -87,7 +92,8 @@ class ProductVariantRepository(Repository[ProductVariant]):
 
     async def get_for_product(self, product_id: str, variant_id: str) -> ProductVariant | None:
         stmt = select(ProductVariant).where(
-            ProductVariant.id == variant_id, ProductVariant.product_id == product_id
+            ProductVariant.id == variant_id,
+            ProductVariant.product_id == product_id
         )
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
@@ -112,4 +118,3 @@ class ProductVariantRepository(Repository[ProductVariant]):
 
     async def delete(self, variant: ProductVariant) -> None:
         await self.session.delete(variant)
-

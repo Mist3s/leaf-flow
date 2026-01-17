@@ -19,4 +19,4 @@ RUN useradd -m appuser \
 
 USER appuser
 
-CMD ["python", "-m", "leaf_flow"]
+CMD ["gunicorn", "leaf_flow.app:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "2", "--timeout", "60"]

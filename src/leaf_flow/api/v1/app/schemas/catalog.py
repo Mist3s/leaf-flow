@@ -97,12 +97,17 @@ class ProductVariant(BaseModel):
 class Product(BaseModel):
     id: str
     name: str
-    description: str
-    category: ProductCategory
+    category: ProductCategory = Field(validation_alias="category_slug")
     tags: List[str]
+    product_type_code: str
     image: str
     variants: List[ProductVariant]
-    model_config = ConfigDict(from_attributes=True)
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    sort_order: int
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class CategoryListResponse(BaseModel):

@@ -3,9 +3,10 @@ from collections import defaultdict
 
 from leaf_flow.domain.entities.product import (
     ProductEntity,
+    ProductDetailEntity,
     ProductVariantEntity,
-    ProductAttributes,
-    ProductAttributesValue, BrewProfileEntity,
+    ProductAttributesEntity,
+    ProductAttributesValueEntity, BrewProfileEntity,
 )
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.domain.entities.cart import CartItemEntity
@@ -35,7 +36,9 @@ def map_user_model_to_entity(user: UserModel) -> UserEntity:
 
 
 
-def map_product_variant_model_to_entity(variant: ProductVariantModel) -> ProductVariantEntity:
+def map_product_variant_model_to_entity(
+    variant: ProductVariantModel
+) -> ProductVariantEntity:
     return ProductVariantEntity(
         id=variant.id,
         weight=variant.weight,
@@ -47,8 +50,10 @@ def map_product_variant_model_to_entity(variant: ProductVariantModel) -> Product
     )
 
 
-def map_product_attribute_value_model_to_entity(v: ProductAttributeValueModel) -> ProductAttributesValue:
-    return ProductAttributesValue(
+def map_product_attribute_value_model_to_entity(
+    v: ProductAttributeValueModel
+) -> ProductAttributesValueEntity:
+    return ProductAttributesValueEntity(
         id=v.id,
         attribute_id=v.attribute_id,
         name=v.name,
@@ -78,7 +83,7 @@ def map_brew_profile_model_to_entity(p) -> BrewProfileEntity:
     )
 
 
-def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
+def map_product_detail_model_to_entity(product: ProductModel) -> ProductDetailEntity:
     # variants
     variants = [map_product_variant_model_to_entity(v) for v in getattr(product, "variants", [])]
 
@@ -100,7 +105,7 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
         g["values"].append(v)
 
     # сортировка атрибутов и значений
-    attributes: list[ProductAttributes] = []
+    attributes: list[ProductAttributesEntity] = []
     for attr_id, pack in grouped.items():
         attr: ProductAttributeModel = pack["attribute"]
         vals: list[ProductAttributeValueModel] = pack["values"]
@@ -113,7 +118,7 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
         vals_sorted = sorted(vals, key=lambda x: (x.sort_order, x.id))
 
         attributes.append(
-            ProductAttributes(
+            ProductAttributesEntity(
                 id=attr.id,
                 code=attr.code,
                 name=attr.name,
@@ -129,7 +134,7 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
 
     attributes.sort(key=lambda a: (a.sort_order, a.code))
 
-    return ProductEntity(
+    return ProductDetailEntity(
         id=product.id,
         name=product.name,
         description=product.description,
@@ -169,6 +174,7 @@ def map_order_model_to_entity(order: OrderModel, items: Sequence[OrderItemModel]
         id=order.id,
         customer_name=order.customer_name,
         phone=order.phone,
+        user_id=order.user_id,
         delivery=order.delivery.value,  # type: ignore[assignment]
         total=order.total,
         items=[
@@ -188,3 +194,21 @@ def map_order_model_to_entity(order: OrderModel, items: Sequence[OrderItemModel]
     )
 
 
+def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
+    variants = [
+        map_product_variant_model_to_entity(v) for v in getattr(product, "variants", [])
+    ]
+
+    return ProductEntity(
+        id=product.id,
+        name=product.name,
+        category_slug=product.category_slug,
+        tags=list(product.tags or []),
+        image=product.image,
+        variants=sorted(variants, key=lambda v: (v.sort_order, v.weight, v.id)),
+        product_type_code=product.product_type_code,
+        is_active=product.is_active,
+        created_at=product.created_at,
+        updated_at=product.updated_at,
+        sort_order=getattr(product, "sort_order", 0)
+    )
