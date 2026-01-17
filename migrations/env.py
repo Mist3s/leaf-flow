@@ -12,6 +12,7 @@ from leaf_flow.infrastructure.db.models.tokens import RefreshToken  # noqa: F401
 from leaf_flow.infrastructure.db.models.products import Product, Category, ProductVariant  # noqa: F401
 from leaf_flow.infrastructure.db.models.orders import Order, OrderStatusEnum, DeliveryMethodEnum, OrderItem  # noqa: F401
 from leaf_flow.infrastructure.db.models.carts import Cart, CartItem  # noqa: F401
+from leaf_flow.infrastructure.db.models.reviews import ExternalReview, PlatformEnum  # noqa: F401
 
 config = context.config
 

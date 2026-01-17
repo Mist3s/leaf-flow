@@ -1,25 +1,65 @@
 from typing import Iterable, Sequence
 from collections import defaultdict
 
+from sqlalchemy.engine import Row
+
 from leaf_flow.domain.entities.product import (
     ProductEntity,
     ProductDetailEntity,
     ProductVariantEntity,
     ProductAttributesEntity,
-    ProductAttributesValueEntity, BrewProfileEntity,
+    ProductAttributesValueEntity,
+    BrewProfileEntity
+)
+from leaf_flow.domain.entities.reviews import (
+    ExternalReviewEntity, ReviewPlatformStatsEntity
 )
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.domain.entities.cart import CartItemEntity
-from leaf_flow.domain.entities.order import OrderEntity, OrderItemEntity
-from leaf_flow.infrastructure.db.models.users import User as UserModel
+from leaf_flow.domain.entities.order import (
+    OrderEntity, OrderItemEntity
+)
+from leaf_flow.infrastructure.db.models.reviews import (
+    ExternalReview as ExternalReviewModel,
+    PlatformEnum as PlatformEnumDB,
+)
+from leaf_flow.infrastructure.db.models.users import (
+    User as UserModel
+)
 from leaf_flow.infrastructure.db.models.products import (
     Product as ProductModel,
     ProductVariant as ProductVariantModel,
     ProductAttribute as ProductAttributeModel,
     ProductAttributeValue as ProductAttributeValueModel,
 )
-from leaf_flow.infrastructure.db.models.carts import CartItem as CartItemModel
-from leaf_flow.infrastructure.db.models.orders import Order as OrderModel, OrderItem as OrderItemModel
+from leaf_flow.infrastructure.db.models.carts import (
+    CartItem as CartItemModel
+)
+from leaf_flow.infrastructure.db.models.orders import (
+    Order as OrderModel,
+    OrderItem as OrderItemModel
+)
+
+
+def map_external_review_model_to_entity(
+    external_review: ExternalReviewModel
+) -> ExternalReviewEntity:
+    return ExternalReviewEntity(
+        id=external_review.id,
+        platform=external_review.platform.value,
+        author=external_review.author,
+        rating=external_review.rating,
+        text=external_review.text,
+        date=external_review.date
+    )
+
+
+def map_review_stats_model_to_entity(row: Row) -> ReviewPlatformStatsEntity:
+    return ReviewPlatformStatsEntity(
+        platform=row.platform.value,
+        avg_rating=row.avg_rating,
+        reviews_count=row.reviews_count
+    )
 
 
 def map_user_model_to_entity(user: UserModel) -> UserEntity:
