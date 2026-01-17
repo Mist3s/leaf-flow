@@ -204,6 +204,9 @@ def map_cart_items_to_entities(items: Sequence[CartItemModel]) -> list[CartItemE
                 variant_id=it.variant_id,
                 quantity=it.quantity,
                 price=it.price,
+                product_name=it.product.name,
+                variant_weight=it.variant.weight,
+                image=it.product.image
             )
         )
     return entities

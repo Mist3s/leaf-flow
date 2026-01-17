@@ -9,6 +9,9 @@ class CartItemEntity:
     variant_id: str
     quantity: int
     price: Decimal
+    product_name: str | None = None
+    variant_weight: str | None = None
+    image: str | None = None
 
     @property
     def total(self) -> Decimal:

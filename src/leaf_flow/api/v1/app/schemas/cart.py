@@ -13,6 +13,21 @@ class CartItemInput(BaseModel):
 class CartItem(CartItemInput):
     price: Decimal
     total: Decimal
+    productName: str
+    variantWeight: str
+    image: str
+
+
+class CartItemAdd(CartItemInput):
+    price: Decimal
+    total: Decimal
+
+
+class CartAdd(BaseModel):
+    items: List[CartItemAdd]
+    totalCount: int
+    totalPrice: Decimal
+    updatedAt: datetime | None = None
 
 
 class Cart(BaseModel):

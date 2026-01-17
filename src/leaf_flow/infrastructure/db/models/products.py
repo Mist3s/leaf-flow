@@ -103,6 +103,9 @@ class Product(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    cart_items: Mapped[list["CartItem"]] = relationship(
+        back_populates="product"
+    )
 
     __table_args__ = (
         # GIN-индекс для быстрого поиска по массиву тегов
@@ -148,6 +151,9 @@ class ProductVariant(Base):
     )
     sort_order: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0"
+    )
+    cart_items: Mapped[list["CartItem"]] = relationship(
+        back_populates="variant"
     )
 
     __table_args__ = (
