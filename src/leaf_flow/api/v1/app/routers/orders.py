@@ -102,7 +102,7 @@ async def get_order(
     uow: UoW = Depends(uow_dep),
 ) -> OrderDetails:
     order_tuple = await order_service.get_order(order_id, uow)
-    order = order_tuple[0]
+    order = order_tuple
     if not order:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -114,9 +114,6 @@ async def get_order(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied"
         )
-    
-    # Загружаем названия продуктов и вариантов
-    names_map = await _load_product_and_variant_names(order.items, uow)
     
     return OrderDetails(
         orderId=order.id,
@@ -130,14 +127,8 @@ async def get_order(
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
-                productName=names_map.get(
-                    (it.product_id, it.variant_id),
-                    ("", "")
-                )[0],
-                variantWeight=names_map.get(
-                    (it.product_id, it.variant_id),
-                    ("", "")
-                )[1],
+                productName=it.product_name,
+                variantWeight=it.variant_weight,
             )
             for it in order.items
         ],

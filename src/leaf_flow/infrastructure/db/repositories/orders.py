@@ -37,7 +37,11 @@ class OrderRepository(Repository[Order]):
     async def get_with_items(self, order_id: str) -> Order | None:
         stmt = (
             select(Order)
-            .options(selectinload(Order.items))
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.items).selectinload(OrderItem.variant),
+                selectinload(Order.items).selectinload(OrderItem.product)
+            )
             .where(Order.id == order_id)
         )
         return (await self.session.execute(stmt)).scalar_one_or_none()
@@ -46,7 +50,11 @@ class OrderRepository(Repository[Order]):
         stmt = (
             select(Order)
             .where(Order.user_id == user_id)
-            .options(selectinload(Order.items))
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.items).selectinload(OrderItem.variant),
+                selectinload(Order.items).selectinload(OrderItem.product)
+            )
             .order_by(Order.created_at.desc())
             .limit(limit)
             .offset(offset)

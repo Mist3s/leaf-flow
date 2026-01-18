@@ -1,12 +1,19 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
-from pydantic import BaseModel
-
-from leaf_flow.api.v1.app.schemas.cart import CartItem
+from pydantic import BaseModel, Field
 
 DeliveryMethod = Literal["pickup", "courier", "cdek"]
 OrderStatus = Literal["created", "processing", "paid", "fulfilled", "cancelled"]
+
+
+class CartItem(BaseModel):
+    price: Decimal
+    total: Decimal
+    productId: str
+    variantId: str
+    quantity: int = Field(1, ge=1)
+
 
 class InternalOrderListItem(BaseModel):
     orderId: str

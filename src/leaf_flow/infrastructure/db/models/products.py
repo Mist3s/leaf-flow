@@ -106,6 +106,9 @@ class Product(Base):
     cart_items: Mapped[list["CartItem"]] = relationship(
         back_populates="product"
     )
+    order_items: Mapped[list["OrderItem"]] = relationship(
+        back_populates="product"
+    )
 
     __table_args__ = (
         # GIN-индекс для быстрого поиска по массиву тегов
@@ -153,6 +156,9 @@ class ProductVariant(Base):
         Integer, nullable=False, server_default="0"
     )
     cart_items: Mapped[list["CartItem"]] = relationship(
+        back_populates="variant"
+    )
+    order_items: Mapped[list["OrderItem"]] = relationship(
         back_populates="variant"
     )
 

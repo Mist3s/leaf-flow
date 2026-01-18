@@ -15,6 +15,9 @@ class OrderItemEntity:
     quantity: int
     price: Decimal
     total: Decimal
+    product_name: str
+    variant_weight: str
+    image: str
 
 
 @dataclass(slots=True)

@@ -83,12 +83,10 @@ async def get_order_details(
     uow: UoW = Depends(uow_dep),
 ) -> InternalOrderDetails:
     order_tuple = await order_service.get_order(order_id, uow)
-    order = order_tuple[0]
+    order = order_tuple
+
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    
-    # Загружаем названия продуктов и вариантов
-    names_map = await _load_product_and_variant_names(order.items, uow)
     
     return InternalOrderDetails(
         orderId=order.id,
@@ -102,8 +100,8 @@ async def get_order_details(
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
-                productName=names_map.get((it.product_id, it.variant_id), ("", ""))[0],
-                variantWeight=names_map.get((it.product_id, it.variant_id), ("", ""))[1],
+                productName=it.product_name,
+                variantWeight=it.variant_weight
             )
             for it in order.items
         ],
@@ -150,9 +148,6 @@ async def update_order_status(
             detail=str(e)
         )
     
-    # Загружаем названия продуктов и вариантов
-    names_map = await _load_product_and_variant_names(order.items, uow)
-    
     return InternalOrderDetails(
         orderId=order.id,
         customerName=order.customer_name,
@@ -165,8 +160,8 @@ async def update_order_status(
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
-                productName=names_map.get((it.product_id, it.variant_id), ("", ""))[0],
-                variantWeight=names_map.get((it.product_id, it.variant_id), ("", ""))[1],
+                productName=it.product_name,
+                variantWeight=it.variant_weight
             )
             for it in order.items
         ],

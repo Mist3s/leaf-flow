@@ -212,7 +212,7 @@ def map_cart_items_to_entities(items: Sequence[CartItemModel]) -> list[CartItemE
     return entities
 
 
-def map_order_model_to_entity(order: OrderModel, items: Sequence[OrderItemModel]) -> OrderEntity:
+def map_order_model_to_entity(order: OrderModel) -> OrderEntity:
     return OrderEntity(
         id=order.id,
         customer_name=order.customer_name,
@@ -227,8 +227,11 @@ def map_order_model_to_entity(order: OrderModel, items: Sequence[OrderItemModel]
                 quantity=it.quantity,
                 price=it.price,
                 total=it.total,
+                product_name=it.product.name,
+                variant_weight=it.variant.weight,
+                image=it.product.image
             )
-            for it in items
+            for it in order.items
         ],
         address=order.address,
         comment=order.comment,

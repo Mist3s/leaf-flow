@@ -93,6 +93,11 @@ async def create_order(
     await uow.orders.add_with_items(order, order_items)
     await uow.commit()
     await clear_cart(user_id, uow)
+
+    order_db = await uow.orders.get_with_items(order_id)
+
+    if not order_db:
+        raise ValueError("ORDER_NOT_FOUND")
     
     # Отправляем уведомление о создании заказа
     user = await uow.users.get(user_id)
@@ -117,22 +122,23 @@ async def create_order(
             comment=comment,
         )
     
-    return map_order_model_to_entity(order, order_items)
+    return map_order_model_to_entity(order_db)
 
 
-async def get_order(order_id: str, uow: UoW) -> tuple[OrderEntity | None]:
+async def get_order(order_id: str, uow: UoW) -> OrderEntity | None:
     order = await uow.orders.get_with_items(order_id)
+
     if not order:
-        return (None,)
-    items = await uow.order_items.list_for_order(order_id)
-    return (map_order_model_to_entity(order, items),)
+        return None
+
+    return map_order_model_to_entity(order)
 
 
 async def list_orders_for_user(user_id: int, limit: int, offset: int, uow: UoW) -> list[OrderEntity]:
     orders = await uow.orders.list_for_user(user_id=user_id, limit=limit, offset=offset)
     entities: list[OrderEntity] = []
     for order in orders:
-        entities.append(map_order_model_to_entity(order, order.items))
+        entities.append(map_order_model_to_entity(order))
     return entities
 
 
@@ -176,6 +182,5 @@ async def update_order_status(
                 new_status=new_status.value,
                 comment=comment,
             )
-    
-    items = await uow.order_items.list_for_order(order_id)
-    return map_order_model_to_entity(order, items)
+
+    return map_order_model_to_entity(order)

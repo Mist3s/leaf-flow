@@ -85,10 +85,12 @@ class OrderItem(Base):
         index=True
     )
     product_id: Mapped[str] = mapped_column(
-        String(64)
+        ForeignKey("products.id", ondelete="RESTRICT"),
+        nullable=False
     )
     variant_id: Mapped[str] = mapped_column(
-        String(64)
+        ForeignKey("product_variants.id", ondelete="RESTRICT"),
+        nullable=False
     )
     quantity: Mapped[int]
     price: Mapped[Decimal] = mapped_column(
@@ -97,5 +99,8 @@ class OrderItem(Base):
     total: Mapped[Decimal] = mapped_column(
         Numeric(10, 2)
     )
+
+    product: Mapped["Product"] = relationship(back_populates="order_items")
+    variant: Mapped["ProductVariant"] = relationship(back_populates="order_items")
 
     order: Mapped[Order] = relationship(back_populates="items")
