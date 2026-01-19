@@ -21,7 +21,9 @@ dependencies = [
   "PyJWT==2.10.1",
   "httpx==0.27.2",
   "bcrypt==4.1.2",
-  "gunicorn"
+  "gunicorn",
+  "redis>=5.0.0",
+  "celery[redis]>=5.4.0"
 ]
 
 [tool.hatch.build.targets.wheel]

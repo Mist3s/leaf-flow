@@ -1,6 +1,7 @@
+from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from leaf_flow.api.deps import get_current_user, uow_dep
+from leaf_flow.api.deps import get_current_user, uow_dep, get_celery
 from leaf_flow.api.v1.app.schemas.orders import (
     OrderRequest, OrderSummary, OrderDetails, OrderListItem, OrderItemDetails
 )
@@ -44,6 +45,7 @@ async def create_order(
     payload: OrderRequest,
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep),
+    celery: Celery = Depends(get_celery)
 ) -> OrderSummary:
     try:
         delivery = DeliveryMethodEnum(payload.delivery)
@@ -62,6 +64,7 @@ async def create_order(
             comment=payload.comment,
             expected_total=payload.expectedTotal,
             uow=uow,
+            celery=celery
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

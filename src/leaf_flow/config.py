@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # --- Безопасность / JWT ---
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_TTL_SECONDS: int = 60 * 15
+    ACCESS_TOKEN_TTL_SECONDS: int = 60 * 60 * 24
     REFRESH_TOKEN_TTL_SECONDS: int = 60 * 60 * 24 * 14
 
     # --- Telegram ---
@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # --- External BOT for notifications ---
     EXTERNAL_BOT_URL: str
     EXTERNAL_BOT_TOKEN: str
+    # --- Redis ---
+    REDIS_HOST: str
+    REDIS_PORT: int
 
     @property
     def database_url(self) -> str:

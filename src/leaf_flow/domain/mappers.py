@@ -19,6 +19,8 @@ from leaf_flow.domain.entities.cart import CartItemEntity
 from leaf_flow.domain.entities.order import (
     OrderEntity, OrderItemEntity
 )
+from leaf_flow.domain.externals.notifications import NotificationsOrderEntity
+from leaf_flow.infrastructure.db.models import SupportTopic
 from leaf_flow.infrastructure.db.models.reviews import (
     ExternalReview as ExternalReviewModel,
     PlatformEnum as PlatformEnumDB,
@@ -37,7 +39,7 @@ from leaf_flow.infrastructure.db.models.carts import (
 )
 from leaf_flow.infrastructure.db.models.orders import (
     Order as OrderModel,
-    OrderItem as OrderItemModel
+    OrderItem as OrderItemModel, OrderStatusEnum
 )
 
 
@@ -257,4 +259,32 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
         created_at=product.created_at,
         updated_at=product.updated_at,
         sort_order=getattr(product, "sort_order", 0)
+    )
+
+
+def map_notifications_order_to_entity(
+    order: OrderModel,
+    user: UserModel,
+    old_status: OrderStatusEnum,
+    status_comment: str | None = None,
+    support_topic: SupportTopic = None,
+) -> NotificationsOrderEntity:
+    admin_chat_id = support_topic.admin_chat_id if support_topic else None
+    thread_id = support_topic.thread_id if support_topic else None
+
+    return NotificationsOrderEntity(
+        order_id=order.id,
+        telegram_id=user.telegram_id,
+        old_status=old_status.value,
+        new_status=order.status.value,
+        comment=order.comment,
+        phone=order.phone,
+        customer_name=order.customer_name,
+        total=order.total,
+        delivery_method=order.delivery.value,
+        email=user.email,
+        address=order.address,
+        status_comment=status_comment,
+        admin_chat_id=admin_chat_id,
+        thread_id=thread_id
     )

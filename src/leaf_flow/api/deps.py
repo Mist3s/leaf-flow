@@ -1,18 +1,29 @@
-from fastapi import Depends, Header, HTTPException, Security, status
+from fastapi import Depends, Header, HTTPException, Security, status, Request
 from typing import Annotated, Optional
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from redis import Redis
 
 from leaf_flow.infrastructure.db.uow import UoW, get_uow
 from leaf_flow.services.security import decode_access_token
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.domain.mappers import map_user_model_to_entity
+from leaf_flow.infrastructure.externals.celery_client import celery_client
 from leaf_flow.config import settings
 
 _internal_http_bearer = HTTPBearer(auto_error=False)
 _admin_http_bearer = HTTPBearer(auto_error=False)
 
+
 def uow_dep(uow: UoW = Depends(get_uow)) -> UoW:
     return uow
+
+
+def get_redis(request: Request) -> Redis:
+    return request.app.state.redis
+
+
+def get_celery():
+    return celery_client
 
 
 async def get_current_user(

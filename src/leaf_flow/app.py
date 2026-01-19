@@ -1,8 +1,10 @@
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from redis.asyncio import Redis
 
 from leaf_flow.api.v1.auth.routers.auth import router as auth_router
 from leaf_flow.api.v1.app.routers.catalog import router as catalog_router
@@ -16,11 +18,33 @@ from leaf_flow.api.v1.admin.routers.products import router as admin_products_rou
 from leaf_flow.config import settings
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis: Redis | None = None
+    try:
+        redis = Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=0,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+            health_check_interval=30,
+            # decode_responses=True,
+        )
+        await redis.ping()
+        app.state.redis = redis
+        yield
+    finally:
+        if redis is not None:
+            await redis.aclose()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         root_path="/api",
         title="leaf-flow",
-        version="2.0.0"
+        version="2.0.0",
+        lifespan=lifespan
     )
     app.add_middleware(
         CORSMiddleware,

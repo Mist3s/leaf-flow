@@ -1,7 +1,10 @@
 import random
 import string
+from dataclasses import asdict
 from decimal import Decimal
 from typing import Iterable
+
+from celery import Celery
 
 from leaf_flow.infrastructure.db.models.orders import (
     Order, OrderItem, DeliveryMethodEnum, OrderStatusEnum
@@ -9,11 +12,7 @@ from leaf_flow.infrastructure.db.models.orders import (
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity
-from leaf_flow.domain.mappers import map_order_model_to_entity
-from leaf_flow.services.notification_service import (
-    send_order_status_notification,
-    send_website_order_notification,
-)
+from leaf_flow.domain.mappers import map_order_model_to_entity, map_notifications_order_to_entity
 
 LETTERS = string.ascii_uppercase
 DIGITS = string.digits
@@ -56,6 +55,7 @@ async def create_order(
     comment: str | None,
     expected_total: Decimal | None,
     uow: UoW,
+    celery: Celery
 ) -> OrderEntity:
     cart = await get_cart(user_id, uow)
     if not cart.items:
@@ -101,26 +101,28 @@ async def create_order(
     
     # Отправляем уведомление о создании заказа
     user = await uow.users.get(user_id)
-    if user and user.telegram_id is not None:
-        # Type narrowing: после проверки user.telegram_id гарантированно не None
-        telegram_id = user.telegram_id
-        await send_order_status_notification(
-            order_id=order_id,
-            user_telegram_id=telegram_id,
-            new_status="created",
-            comment=comment,
-        )
-    elif user and user.email is not None:
-        # Пользователь зарегистрирован через сайт (по email)
-        await send_website_order_notification(
-            order_id=order_id,
-            email=user.email,
-            phone=phone,
-            customer_name=customer_name,
-            total=str(cart.total_price),
-            delivery_method=delivery.value,
-            comment=comment,
-        )
+    support_topic = await uow.support_topics.get_by_user_telegram_id(
+        user.telegram_id
+    ) if user.telegram_id else None
+
+    entity = map_notifications_order_to_entity(
+        order=order_db,
+        user=user,
+        old_status=order_db.status,
+        support_topic=support_topic
+    )
+
+
+    celery.send_task(
+        "notifications.send_notification.order.admin",
+        args=[entity.to_payload()],
+        queue="notifications"
+    )
+    celery.send_task(
+        "notifications.send_notification.order.user",
+        args=[entity.to_payload()],
+        queue="notifications"
+    )
     
     return map_order_model_to_entity(order_db)
 
@@ -147,6 +149,7 @@ async def update_order_status(
     new_status: OrderStatusEnum,
     comment: str | None,
     uow: UoW,
+    celery: Celery
 ) -> OrderEntity:
     """
     Обновляет статус заказа и отправляет уведомление во внешний API.
@@ -156,6 +159,7 @@ async def update_order_status(
         new_status: Новый статус заказа
         comment: Опциональный комментарий к изменению статуса
         uow: Unit of Work
+        celery: Celery client
 
     Returns:
         OrderEntity: Обновленная сущность заказа
@@ -166,21 +170,33 @@ async def update_order_status(
     order = await uow.orders.get_with_items(order_id)
     if not order:
         raise ValueError("ORDER_NOT_FOUND")
-    
+
+    old_status = order.status
     order.status = new_status
     await uow.commit()
-    
-    # Отправляем уведомление о смене статуса
-    if order.user_id:
-        user = await uow.users.get(order.user_id)
-        if user and user.telegram_id is not None:
-            # Type narrowing: после проверки user.telegram_id гарантированно не None
-            telegram_id = user.telegram_id
-            await send_order_status_notification(
-                order_id=order_id,
-                user_telegram_id=telegram_id,
-                new_status=new_status.value,
-                comment=comment,
-            )
+
+    user = await uow.users.get(order.user_id)
+    support_topic = await uow.support_topics.get_by_user_telegram_id(
+        user.telegram_id
+    ) if user.telegram_id else None
+
+    entity = map_notifications_order_to_entity(
+        order=order,
+        user=user,
+        old_status=old_status,
+        status_comment=comment,
+        support_topic=support_topic
+    )
+
+    celery.send_task(
+        "notifications.send_notification.order.admin",
+        args=[entity.to_payload()],
+        queue="notifications"
+    )
+    celery.send_task(
+        "notifications.send_notification.order.user",
+        args=[entity.to_payload()],
+        queue="notifications"
+    )
 
     return map_order_model_to_entity(order)
