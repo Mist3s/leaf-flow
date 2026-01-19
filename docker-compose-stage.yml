@@ -57,9 +57,9 @@ services:
     env_file: .env
     restart: always
 
-  redis:
+  leaf-flow-redis-stage:
     image: redis:7-alpine
-    container_name: delivery_geo_redis
+    container_name: leaf-flow-redis-stage
     command: [ "redis-server", "--save", "", "--appendonly", "no" ]
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
@@ -74,7 +74,7 @@ services:
     restart: always
     env_file: .env
     depends_on:
-      redis:
+      leaf-flow-redis-stage:
         condition: service_healthy
     deploy:
       resources:

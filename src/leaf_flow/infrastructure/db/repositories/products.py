@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from sqlalchemy import select, func, or_
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, with_loader_criteria
 
 from leaf_flow.infrastructure.db.models.products import (
     Product, ProductVariant, Category, ProductAttributeValue
@@ -26,8 +26,10 @@ class ProductRepository(Repository[Product]):
     ) -> tuple[int, Sequence[Product]]:
         stmt = (
             select(Product)
+            .where(Product.is_active.is_(True))
             .options(
-                selectinload(Product.variants)
+                selectinload(Product.variants),
+                with_loader_criteria(ProductVariant, ProductVariant.is_active.is_(True), include_aliases=True),
             )
         )
 
@@ -59,9 +61,17 @@ class ProductRepository(Repository[Product]):
     async def get_with_variants(self, product_id: str) -> Product | None:
         stmt = (
             select(Product)
-            .where(Product.id == product_id)
+            .where(
+                Product.id == product_id,
+                Product.is_active.is_(True),
+            )
             .options(
                 selectinload(Product.variants),
+                with_loader_criteria(
+                    ProductVariant,
+                    ProductVariant.is_active.is_(True),
+                    include_aliases=True,
+                ),
                 selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.brew_profiles),
             )

@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, UniqueConstraint, Numeric, DateTime, func, Index
+from sqlalchemy import ForeignKey, UniqueConstraint, Numeric, DateTime, func, Index, ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from leaf_flow.infrastructure.db.base import Base
@@ -32,11 +32,28 @@ class CartItem(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
     cart: Mapped[Cart] = relationship(back_populates="items")
-    product: Mapped["Product"] = relationship(back_populates="cart_items")
-    variant: Mapped["ProductVariant"] = relationship(back_populates="cart_items")
+
+    variant: Mapped["ProductVariant"] = relationship(
+        back_populates="cart_items",
+        foreign_keys=[variant_id],
+    )
+
+    product: Mapped["Product"] = relationship(
+        back_populates="cart_items",
+        foreign_keys=[product_id],
+    )
 
     __table_args__ = (
         UniqueConstraint("cart_id", "product_id", "variant_id", name="uq_cart_item_unique"),
         # Составной индекс для быстрого поиска товара в корзине
         Index("ix_cart_items_cart_product_variant", "cart_id", "product_id", "variant_id"),
+        ForeignKeyConstraint(
+            ["product_id", "variant_id"],
+            ["product_variants.product_id", "product_variants.id"],
+            name="fk_cart_items_product_variant_pair",
+            onupdate="CASCADE",
+            ondelete="RESTRICT",
+        ),
+        Index("idx_cart_items_product_id", "product_id"),
+        Index("idx_cart_items_variant_id", "variant_id"),
     )

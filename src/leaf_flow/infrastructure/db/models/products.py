@@ -156,7 +156,8 @@ class ProductVariant(Base):
         Integer, nullable=False, server_default="0"
     )
     cart_items: Mapped[list["CartItem"]] = relationship(
-        back_populates="variant"
+        back_populates="variant",
+        foreign_keys="CartItem.variant_id",
     )
     order_items: Mapped[list["OrderItem"]] = relationship(
         back_populates="variant"
@@ -168,6 +169,16 @@ class ProductVariant(Base):
             "weight",
             name="uq_product_variant_weight_per_product"
         ),
+        UniqueConstraint(
+            "product_id",
+            "id",
+            name="uq_product_variants_product_id_id"
+        ),
+        Index(
+            "idx_pv_product_active",
+            "product_id",
+            postgresql_where=(is_active.is_(True)),
+        )
     )
 
 
