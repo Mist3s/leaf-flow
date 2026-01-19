@@ -57,6 +57,13 @@ services:
     env_file: .env
     restart: always
 
+  leaf-flow-web-nginx-stage:
+    image: mist3s/leaf-flow-web-nginx:stage
+    container_name: leaf-flow-web-nginx-stage
+    ports:
+      - "5026:80"
+    restart: always
+
   leaf-flow-redis-stage:
     image: redis:7-alpine
     container_name: leaf-flow-redis-stage

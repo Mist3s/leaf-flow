@@ -27,7 +27,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 3G
 
   leaf-flow-bot:
     image: mist3s/leaf-flow-bot:prod
@@ -43,7 +43,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 3G
 
   leaf-flow-nginx:
     image: mist3s/leaf-flow-nginx:prod
@@ -55,6 +55,15 @@ services:
     volumes:
       - static_data:/app/static
     env_file: .env
+    restart: always
+
+  leaf-flow-web-nginx:
+    image: mist3s/leaf-flow-web-nginx:prod
+    container_name: leaf-flow-web-nginx
+    ports:
+      - "5027:80"
+    depends_on:
+      - leaf-flow
     restart: always
 
   leaf-flow-redis:
