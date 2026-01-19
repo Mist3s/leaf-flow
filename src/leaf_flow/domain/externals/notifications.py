@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal, Any
 
@@ -17,6 +18,7 @@ class NotificationsOrderEntity:
     customer_name: str
     total: Decimal
     delivery_method: DeliveryMethod
+    created_at: datetime
     email: str | None = None
     address: str | None = None
     status_comment: str | None = None
@@ -43,4 +45,5 @@ class NotificationsOrderEntity:
             "status_comment": self.status_comment,
             "admin_chat_id": self.admin_chat_id,
             "thread_id": self.thread_id,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M")
         }

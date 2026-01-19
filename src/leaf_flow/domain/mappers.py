@@ -286,5 +286,6 @@ def map_notifications_order_to_entity(
         address=order.address,
         status_comment=status_comment,
         admin_chat_id=admin_chat_id,
-        thread_id=thread_id
+        thread_id=thread_id,
+        created_at=order.created_at
     )
