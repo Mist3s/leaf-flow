@@ -63,6 +63,17 @@ class ProductAttributeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProductImage(BaseModel):
+    id: int
+    product_id: str
+    title: str
+    image_url: str
+    is_active: bool
+    sort_order: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProductDetail(BaseModel):
     id: str
     name: str
@@ -78,6 +89,7 @@ class ProductDetail(BaseModel):
     updated_at: datetime
     sort_order: int
     brewing_profiles: List[BrewProfileOut] = Field(validation_alias="brew_profiles")
+    images: List[ProductImage]
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

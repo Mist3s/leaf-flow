@@ -109,6 +109,12 @@ class Product(Base):
     order_items: Mapped[list["OrderItem"]] = relationship(
         back_populates="product"
     )
+    images: Mapped[list["ProductImage"]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="ProductImage.sort_order, ProductImage.id",
+    )
 
     __table_args__ = (
         # GIN-индекс для быстрого поиска по массиву тегов
@@ -403,4 +409,42 @@ class ProductBrewProfile(Base):
             "product_id", "sort_order", "id",
             postgresql_where=(is_active.is_(True))
         )
+    )
+
+
+class ProductImage(Base):
+    __tablename__ = "product_images"
+    id: Mapped[int] = mapped_column(
+        primary_key=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    title: Mapped[str] = mapped_column(
+        String(258),
+        nullable=False
+    )
+    image_url: Mapped[str] = mapped_column(
+        String(1024), nullable=False
+    )
+
+    sort_order: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
+
+    product: Mapped["Product"] = relationship(
+        back_populates="images"
+    )
+
+    __table_args__ = (
+        Index(
+            "idx_product_images_product_sort_active",
+            "product_id", "sort_order", "id",
+            postgresql_where=(is_active.is_(True))
+        ),
     )

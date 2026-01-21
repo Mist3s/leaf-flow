@@ -3,7 +3,7 @@ from leaf_flow.domain.entities.reviews import (
     ReviewPlatformStatsEntity,
     ExternalReviewEntity
 )
-from leaf_flow.domain.mappers import (
+from leaf_flow.domain.mappers.review import (
     map_external_review_model_to_entity,
     map_review_stats_model_to_entity
 )

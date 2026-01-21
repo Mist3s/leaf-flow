@@ -18,7 +18,7 @@ from leaf_flow.services.security import (
     _utcnow
 )
 from leaf_flow.domain.entities.user import UserEntity
-from leaf_flow.domain.mappers import map_user_model_to_entity
+from leaf_flow.domain.mappers.user import map_user_model_to_entity
 
 
 class AuthTokens(BaseModel):

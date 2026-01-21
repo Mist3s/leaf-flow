@@ -1,6 +1,6 @@
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.domain.entities.product import ProductEntity
-from leaf_flow.domain.mappers import (
+from leaf_flow.domain.mappers.product import (
     map_product_model_to_entity,
     map_product_detail_model_to_entity
 )

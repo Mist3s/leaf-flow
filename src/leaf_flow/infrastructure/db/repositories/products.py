@@ -4,7 +4,7 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session, selectinload, with_loader_criteria
 
 from leaf_flow.infrastructure.db.models.products import (
-    Product, ProductVariant, Category, ProductAttributeValue
+    Product, ProductVariant, Category, ProductAttributeValue, ProductBrewProfile, ProductImage, ProductAttribute
 )
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
@@ -67,13 +67,15 @@ class ProductRepository(Repository[Product]):
             )
             .options(
                 selectinload(Product.variants),
-                with_loader_criteria(
-                    ProductVariant,
-                    ProductVariant.is_active.is_(True),
-                    include_aliases=True,
-                ),
                 selectinload(Product.attribute_values).selectinload(ProductAttributeValue.attribute),
                 selectinload(Product.brew_profiles),
+                selectinload(Product.images),
+
+                with_loader_criteria(ProductVariant, ProductVariant.is_active.is_(True), include_aliases=True),
+                with_loader_criteria(ProductBrewProfile, ProductBrewProfile.is_active.is_(True), include_aliases=True),
+                with_loader_criteria(ProductImage, ProductImage.is_active.is_(True), include_aliases=True),
+                with_loader_criteria(ProductAttributeValue, ProductAttributeValue.is_active.is_(True), include_aliases=True),
+                with_loader_criteria(ProductAttribute, ProductAttribute.is_active.is_(True), include_aliases=True)
             )
         )
         result = await self.session.execute(stmt)

@@ -9,6 +9,16 @@ UIHint = Literal["chips", "radio", "toggle", "scale"]
 
 
 @dataclass(slots=True)
+class ProductImageEntity:
+    id: int
+    product_id: str
+    title: str
+    image_url: str
+    is_active: bool
+    sort_order: int
+
+
+@dataclass(slots=True)
 class ProductVariantEntity:
     id: str
     weight: str
@@ -74,6 +84,7 @@ class ProductDetailEntity:
     created_at: datetime
     updated_at: datetime
     sort_order: int
+    images: List[ProductImageEntity]
 
 
 @dataclass(slots=True)

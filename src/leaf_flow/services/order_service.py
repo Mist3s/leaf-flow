@@ -1,6 +1,5 @@
 import random
 import string
-from dataclasses import asdict
 from decimal import Decimal
 from typing import Iterable
 
@@ -12,7 +11,8 @@ from leaf_flow.infrastructure.db.models.orders import (
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity
-from leaf_flow.domain.mappers import map_order_model_to_entity, map_notifications_order_to_entity
+from leaf_flow.domain.mappers.order import map_order_model_to_entity
+from leaf_flow.domain.mappers.notifications import map_notifications_order_to_entity
 
 LETTERS = string.ascii_uppercase
 DIGITS = string.digits
