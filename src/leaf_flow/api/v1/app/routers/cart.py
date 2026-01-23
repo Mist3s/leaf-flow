@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from leaf_flow.api.deps import get_current_user, uow_dep
 from leaf_flow.api.v1.app.schemas.cart import Cart as CartSchema, CartItemInput, CartItem, CartItemAdd, CartAdd
-from leaf_flow.domain.entities.user import UserEntity
+from leaf_flow_core.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import cart_service
 

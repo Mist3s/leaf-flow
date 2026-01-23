@@ -7,7 +7,7 @@ from leaf_flow.api.v1.internal.schemas.orders import (
     InternalOrderDetails, InternalCartItem
 )
 from leaf_flow.infrastructure.db.uow import UoW
-from leaf_flow.infrastructure.db.models.orders import OrderStatusEnum
+from leaf_flow_core.enums.order import OrderStatusEnum
 from leaf_flow.services import order_service
 
 

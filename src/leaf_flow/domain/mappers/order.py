@@ -1,5 +1,5 @@
-from leaf_flow.domain.entities.order import OrderItemEntity, OrderEntity
-from leaf_flow.infrastructure.db.models import Order as OrderModel
+from leaf_flow_core.entities.order import OrderItemEntity, OrderEntity
+from leaf_flow_core.models.orders import Order as OrderModel
 
 
 def map_order_model_to_entity(order: OrderModel) -> OrderEntity:

@@ -23,8 +23,12 @@ dependencies = [
   "bcrypt==4.1.2",
   "gunicorn",
   "redis>=5.0.0",
-  "celery[redis]>=5.4.0"
+  "celery[redis]>=5.4.0",
+  "leaf-flow-core @ git+https://github.com/Mist3s/leaf-flow-core.git@v0.1.0"
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/leaf_flow"]

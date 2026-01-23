@@ -5,7 +5,7 @@ from redis import Redis
 
 from leaf_flow.infrastructure.db.uow import UoW, get_uow
 from leaf_flow.services.security import decode_access_token
-from leaf_flow.domain.entities.user import UserEntity
+from leaf_flow_core.entities.user import UserEntity
 from leaf_flow.domain.mappers.user import map_user_model_to_entity
 from leaf_flow.infrastructure.externals.celery_client import celery_client
 from leaf_flow.config import settings
@@ -53,14 +53,4 @@ async def require_internal_auth(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     token = credentials.credentials
     if token != settings.INTERNAL_BOT_TOKEN:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-
-
-async def require_admin_auth(
-    credentials: HTTPAuthorizationCredentials | None = Security(_admin_http_bearer),
-) -> None:
-    if not credentials or not credentials.scheme or credentials.scheme.lower() != "bearer":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-    token = credentials.credentials
-    if token != settings.ADMIN_API_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

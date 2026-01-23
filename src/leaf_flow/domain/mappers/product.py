@@ -1,6 +1,6 @@
 from itertools import groupby
 
-from leaf_flow.domain.entities.product import (
+from leaf_flow_core.entities.product import (
     ProductEntity,
     ProductDetailEntity,
     ProductVariantEntity,
@@ -9,7 +9,7 @@ from leaf_flow.domain.entities.product import (
     BrewProfileEntity,
     ProductImageEntity
 )
-from leaf_flow.infrastructure.db.models.products import (
+from leaf_flow_core.models.products import (
     Product as ProductModel,
     ProductVariant as ProductVariantModel,
     ProductAttributeValue as ProductAttributeValueModel,

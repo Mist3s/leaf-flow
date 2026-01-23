@@ -14,7 +14,7 @@ from leaf_flow.api.v1.auth.schemas.auth import (
     ChangePasswordRequest,
     SetEmailRequest,
 )
-from leaf_flow.domain.entities.user import UserEntity
+from leaf_flow_core.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.auth_service import (
     exchange_init_data_for_tokens,
@@ -444,5 +444,3 @@ async def set_email(
         languageCode=updated_user.language_code,
         photoUrl=updated_user.photo_url,
     )
-
-

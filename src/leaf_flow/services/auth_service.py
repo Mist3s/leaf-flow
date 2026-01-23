@@ -5,8 +5,8 @@ from urllib.parse import parse_qsl
 from pydantic import BaseModel
 
 from leaf_flow.config import settings
-from leaf_flow.infrastructure.db.models.tokens import RefreshToken
-from leaf_flow.infrastructure.db.models.users import User
+from leaf_flow_core.models.tokens import RefreshToken
+from leaf_flow_core.models.users import User
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.security import (
     verify_telegram_webapp_request,
@@ -17,7 +17,7 @@ from leaf_flow.services.security import (
     verify_password,
     _utcnow
 )
-from leaf_flow.domain.entities.user import UserEntity
+from leaf_flow_core.entities.user import UserEntity
 from leaf_flow.domain.mappers.user import map_user_model_to_entity
 
 

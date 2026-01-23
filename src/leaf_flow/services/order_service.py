@@ -5,12 +5,12 @@ from typing import Iterable
 
 from celery import Celery
 
-from leaf_flow.infrastructure.db.models.orders import (
+from leaf_flow_core.models.orders import (
     Order, OrderItem, DeliveryMethodEnum, OrderStatusEnum
 )
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
-from leaf_flow.domain.entities.order import OrderEntity
+from leaf_flow_core.entities.order import OrderEntity
 from leaf_flow.domain.mappers.order import map_order_model_to_entity
 from leaf_flow.domain.mappers.notifications import map_notifications_order_to_entity
 

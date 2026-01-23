@@ -1,4 +1,4 @@
-from leaf_flow.infrastructure.db.models.support_topics import SupportTopic
+from leaf_flow_core.models.support_topics import SupportTopic
 from leaf_flow.infrastructure.db.uow import UoW
 
 
@@ -35,4 +35,3 @@ async def ensure_support_topic(
     await uow.flush()
     await uow.commit()
     return new_topic, True
-

@@ -4,7 +4,6 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-
 DeliveryMethod = Literal["pickup", "courier", "cdek"]
 OrderStatus = Literal["created", "processing", "paid", "fulfilled", "cancelled"]
 
@@ -50,5 +49,3 @@ class OrderDetails(OrderSummary):
     comment: str | None = None
     status: OrderStatus
     createdAt: datetime
-
-

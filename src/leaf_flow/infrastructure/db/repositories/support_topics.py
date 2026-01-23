@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from leaf_flow.infrastructure.db.models.support_topics import SupportTopic
+from leaf_flow_core.models.support_topics import SupportTopic
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
@@ -23,10 +23,3 @@ class SupportTopicRepository(Repository[SupportTopic]):
             )
         )
         return result.scalar_one_or_none()
-
-
-
-
-
-
-

@@ -44,6 +44,7 @@
 - 🏗️ **Чистая архитектура** — разделение на слои `domain`, `infrastructure`, `services` и `api`
 - 🔄 **Unit of Work паттерн** — управление транзакциями и консистентностью данных
 - 📦 **Repository паттерн** — абстракция доступа к данным с типизацией
+- 🧩 **Shared Core** — доменные модели вынесены в отдельный пакет [`leaf-flow-core`](https://github.com/Mist3s/leaf-flow-core)
 
 ### Каталог и продукты
 - 🍵 **Гибкая система продуктов** — категории, теги, варианты (вес/цена), профили заваривания
@@ -86,6 +87,7 @@
 | **Server**         | Uvicorn / Gunicorn                  |
 | **Reverse Proxy**  | nginx                               |
 | **Containerize**   | Docker, Docker Compose              |
+| **Shared Models**  | [leaf-flow-core](https://github.com/Mist3s/leaf-flow-core) |
 
 ---
 
@@ -101,7 +103,7 @@ graph TB
         A2[Catalog Routes] --> B
         A3[Cart Routes] --> B
         A4[Orders Routes] --> B
-        A5[Admin Routes] --> B
+        A5[Internal Routes] --> B
     end
 
     subgraph "Service Layer"
@@ -110,7 +112,6 @@ graph TB
         C3[Cart Service]
         C4[Order Service]
         C5[Notification Service]
-        C6[Admin Product Service]
     end
 
     subgraph "Infrastructure Layer"
@@ -127,6 +128,12 @@ graph TB
         L[External Interfaces]
     end
 
+    subgraph "Shared Package: leaf-flow-core"
+        M[SQLAlchemy Models]
+        N[Domain Entities]
+        O[Enums & Constants]
+    end
+
     B --> C1
     B --> C2
     B --> C3
@@ -137,17 +144,26 @@ graph TB
     C4 --> D
     C5 --> I
     E --> G
-    F --> G
+    F --> M
+    J --> N
 ```
 
 ### Слои приложения
 
 | Слой               | Назначение                              | Компоненты                                   |
 |--------------------|-----------------------------------------|----------------------------------------------|
-| **API**            | HTTP endpoints, роутинг, валидация      | `auth`, `catalog`, `cart`, `orders`, `admin` |
-| **Services**       | Бизнес-логика приложения                | 10 сервисов для разных доменов               |
+| **API**            | HTTP endpoints, роутинг, валидация      | `auth`, `catalog`, `cart`, `orders`, `internal` |
+| **Services**       | Бизнес-логика приложения                | Сервисы для разных доменов                   |
 | **Infrastructure** | Работа с БД, Redis, внешние интеграции  | UoW, Repositories, Celery                    |
 | **Domain**         | Доменные сущности, маппинг, интерфейсы  | Entities, Mappers, Externals                 |
+
+---
+
+## 🔗 Связанные репозитории
+
+| Репозиторий | Описание |
+|-------------|----------|
+| [leaf-flow-core](https://github.com/Mist3s/leaf-flow-core) | Shared-пакет с SQLAlchemy моделями, доменными сущностями и enum'ами |
 
 ---
 
@@ -404,9 +420,6 @@ leaf-flow/
     ├── api/                  # API слой
     │   ├── deps.py           # Общие зависимости
     │   └── v1/
-    │       ├── admin/        # Административные endpoints
-    │       │   ├── routers/
-    │       │   └── schemas/
     │       ├── app/          # Основные endpoints
     │       │   ├── routers/
     │       │   │   ├── cart.py
@@ -422,35 +435,19 @@ leaf-flow/
     │           └── schemas/
     │
     ├── domain/               # Доменный слой
-    │   ├── entities/         # Доменные сущности
-    │   │   ├── cart.py
-    │   │   ├── category.py
-    │   │   ├── order.py
-    │   │   ├── product.py
-    │   │   ├── reviews.py
-    │   │   └── user.py
-    │   ├── mappers.py        # Маппинг Model ↔ Entity
+    │   ├── entities/         # Локальные доменные сущности
+    │   ├── mappers/          # Маппинг Model → Entity
     │   └── externals/        # Интерфейсы внешних сервисов
     │
     ├── infrastructure/       # Инфраструктурный слой
     │   ├── db/
-    │   │   ├── base.py       # Базовый класс моделей
     │   │   ├── session.py    # Настройка сессии БД
     │   │   ├── uow.py        # Unit of Work
-    │   │   ├── models/       # SQLAlchemy модели
-    │   │   │   ├── carts.py
-    │   │   │   ├── orders.py
-    │   │   │   ├── products.py
-    │   │   │   ├── reviews.py
-    │   │   │   ├── support_topics.py
-    │   │   │   ├── tokens.py
-    │   │   │   └── users.py
     │   │   └── repositories/ # Репозитории
     │   └── externals/
     │       └── celery_client.py
     │
     └── services/             # Сервисный слой
-        ├── admin_product_service.py
         ├── auth_service.py
         ├── cart_service.py
         ├── catalog_service.py
@@ -459,6 +456,16 @@ leaf-flow/
         ├── review_service.py
         ├── security.py
         └── support_topic_service.py
+
+# Shared пакет (отдельный репозиторий):
+# https://github.com/Mist3s/leaf-flow-core
+#
+# leaf-flow-core/
+# └── src/leaf_flow_core/
+#     ├── models/           # SQLAlchemy модели (Product, Order, User, etc.)
+#     ├── entities/         # Domain entities (dataclasses)
+#     ├── enums/            # OrderStatus, DeliveryMethod, etc.
+#     └── constants.py      # Общие константы
 ```
 
 ---
@@ -466,6 +473,8 @@ leaf-flow/
 ## 🧩 Модули и функциональность
 
 ### Модели данных
+
+> Все модели определены в пакете [`leaf-flow-core`](https://github.com/Mist3s/leaf-flow-core).
 
 | Модель                  | Описание                                        |
 |-------------------------|-------------------------------------------------|
@@ -523,15 +532,27 @@ app.include_router(
 
 ### Работа с моделями
 
-1. Создайте модель в `infrastructure/db/models/`
-2. Создайте репозиторий в `infrastructure/db/repositories/`
-3. Добавьте репозиторий в `UoW` (`infrastructure/db/uow.py`)
-4. Импортируйте модель в `migrations/env.py`
-5. Создайте миграцию:
+> **Важно:** SQLAlchemy модели находятся в отдельном пакете [`leaf-flow-core`](https://github.com/Mist3s/leaf-flow-core).
+
+**Добавление новой модели:**
+
+1. Создайте модель в `leaf-flow-core/src/leaf_flow_core/models/`
+2. Опубликуйте новую версию `leaf-flow-core`
+3. Обновите зависимость в `leaf-flow`
+4. Создайте репозиторий в `infrastructure/db/repositories/`
+5. Добавьте репозиторий в `UoW` (`infrastructure/db/uow.py`)
+6. Создайте миграцию:
 
 ```bash
 alembic revision --autogenerate -m "add your_model table"
 alembic upgrade head
+```
+
+**Использование моделей:**
+
+```python
+from leaf_flow_core.models import Product, Order, User
+from leaf_flow_core.enums import OrderStatus, DeliveryMethod
 ```
 
 ### Добавление сервиса

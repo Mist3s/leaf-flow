@@ -3,8 +3,9 @@ from typing import Sequence
 from sqlalchemy import select, func, or_
 from sqlalchemy.orm import Session, selectinload, with_loader_criteria
 
-from leaf_flow.infrastructure.db.models.products import (
-    Product, ProductVariant, Category, ProductAttributeValue, ProductBrewProfile, ProductImage, ProductAttribute
+from leaf_flow_core.models.products import (
+    Product, ProductVariant, Category, ProductAttributeValue,
+    ProductBrewProfile, ProductImage, ProductAttribute
 )
 from leaf_flow.infrastructure.db.repositories.base import Repository
 

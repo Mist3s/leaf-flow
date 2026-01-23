@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Iterable
 
 from leaf_flow.infrastructure.db.uow import UoW
-from leaf_flow.domain.entities.cart import CartEntity
+from leaf_flow_core.entities.cart import CartEntity
 from leaf_flow.domain.mappers.cart import map_cart_items_to_entities
 
 

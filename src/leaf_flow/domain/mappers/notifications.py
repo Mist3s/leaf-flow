@@ -1,10 +1,8 @@
-from leaf_flow.domain.externals.notifications import NotificationsOrderEntity
-from leaf_flow.infrastructure.db.models import (
-    SupportTopic as SupportTopicModel,
-    OrderStatusEnum as OrderStatusEnumDB,
-    User as UserModel,
-    Order as OrderModel
-)
+from leaf_flow_core.models.support_topics import SupportTopic as SupportTopicModel
+from leaf_flow_core.models.orders import Order as OrderModel
+from leaf_flow_core.models.users import User as UserModel
+from leaf_flow_core.enums.order import OrderStatusEnum as OrderStatusEnumDB
+from leaf_flow_core.entities.notifications import NotificationsOrderEntity
 
 
 def map_notifications_order_to_entity(

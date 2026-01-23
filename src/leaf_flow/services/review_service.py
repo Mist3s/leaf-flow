@@ -1,5 +1,5 @@
 from leaf_flow.infrastructure.db.uow import UoW
-from leaf_flow.domain.entities.reviews import (
+from leaf_flow_core.entities.reviews import (
     ReviewPlatformStatsEntity,
     ExternalReviewEntity
 )

@@ -5,14 +5,14 @@ from sqlalchemy import pool
 from alembic import context
 
 from leaf_flow.config import settings
-from leaf_flow.infrastructure.db.base import Base
+from leaf_flow_core.models.base import Base
 # Важно: импортируем модели, чтобы они зарегистрировались в Base.metadata
-from leaf_flow.infrastructure.db.models.users import User  # noqa: F401
-from leaf_flow.infrastructure.db.models.tokens import RefreshToken  # noqa: F401
-from leaf_flow.infrastructure.db.models.products import Product, Category, ProductVariant  # noqa: F401
-from leaf_flow.infrastructure.db.models.orders import Order, OrderStatusEnum, DeliveryMethodEnum, OrderItem  # noqa: F401
-from leaf_flow.infrastructure.db.models.carts import Cart, CartItem  # noqa: F401
-from leaf_flow.infrastructure.db.models.reviews import ExternalReview, PlatformEnum  # noqa: F401
+from leaf_flow_core.models.users import User  # noqa: F401
+from leaf_flow_core.models.tokens import RefreshToken  # noqa: F401
+from leaf_flow_core.models.products import Product, Category, ProductVariant  # noqa: F401
+from leaf_flow_core.models.orders import Order, OrderStatusEnum, DeliveryMethodEnum, OrderItem  # noqa: F401
+from leaf_flow_core.models.carts import Cart, CartItem  # noqa: F401
+from leaf_flow_core.models.reviews import ExternalReview, PlatformEnum  # noqa: F401
 
 config = context.config
 

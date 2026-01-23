@@ -3,7 +3,7 @@ from typing import Sequence
 from sqlalchemy import select, func, cast, Float
 from sqlalchemy.orm import Session
 
-from leaf_flow.infrastructure.db.models.reviews import ExternalReview, PlatformEnum
+from leaf_flow_core.models.reviews import ExternalReview, PlatformEnum
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 class ExternalReviewRepository(Repository[ExternalReview]):

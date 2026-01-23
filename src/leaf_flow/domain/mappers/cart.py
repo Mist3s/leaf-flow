@@ -1,7 +1,7 @@
 from typing import Sequence
 
-from leaf_flow.domain.entities.cart import CartItemEntity
-from leaf_flow.infrastructure.db.models import CartItem as CartItemModel
+from leaf_flow_core.entities.cart import CartItemEntity
+from leaf_flow_core.models.carts import CartItem as CartItemModel
 
 
 def map_cart_items_to_entities(items: Sequence[CartItemModel]) -> list[CartItemEntity]:

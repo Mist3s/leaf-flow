@@ -1,5 +1,5 @@
-from leaf_flow.domain.entities.user import UserEntity
-from leaf_flow.infrastructure.db.models import User as UserModel
+from leaf_flow_core.entities.user import UserEntity
+from leaf_flow_core.models.users import User as UserModel
 
 
 def map_user_model_to_entity(user: UserModel) -> UserEntity:

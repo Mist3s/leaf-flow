@@ -5,8 +5,8 @@ from leaf_flow.api.deps import get_current_user, uow_dep, get_celery
 from leaf_flow.api.v1.app.schemas.orders import (
     OrderRequest, OrderSummary, OrderDetails, OrderListItem, OrderItemDetails
 )
-from leaf_flow.infrastructure.db.models.orders import DeliveryMethodEnum
-from leaf_flow.domain.entities.user import UserEntity
+from leaf_flow_core.enums.order import DeliveryMethodEnum
+from leaf_flow_core.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import order_service
 

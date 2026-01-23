@@ -4,7 +4,7 @@ from typing import Sequence
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session, selectinload
 
-from leaf_flow.infrastructure.db.models.carts import Cart, CartItem
+from leaf_flow_core.models.carts import Cart, CartItem
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
@@ -98,5 +98,3 @@ class CartRepository(Repository[Cart]):
             await self.session.delete(cart)
             return True
         return False
-
-
