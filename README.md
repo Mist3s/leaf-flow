@@ -6,7 +6,7 @@
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D.svg)](https://redis.io/)
 [![License](https://img.shields.io/badge/license-Proprietary-gray.svg)](LICENSE)
 
-**LeafFlow** — бэкенд для чайного интернет-магазина, построенный на FastAPI с использованием принципов чистой архитектуры (Clean Architecture) и Domain-Driven Design.  
+**LeafFlow** — бэкенд для чайного интернет-магазина, построенный на FastAPI с использованием элементов чистой архитектуры (Clean Architecture) и Domain-Driven Design.  
 Полнофункциональное решение «от листа до корзины» с интеграцией Telegram, системой заказов и гибким каталогом продуктов.
 
 ---
@@ -93,7 +93,13 @@
 
 ## 🏛 Архитектура
 
-Проект следует принципам **Clean Architecture** и **Domain-Driven Design**.
+Проект использует элементы **Clean Architecture** и **Domain-Driven Design** с прагматичными упрощениями:
+
+- **Shared Kernel** — общие модели вынесены в пакет [`leaf-flow-core`](https://github.com/Mist3s/leaf-flow-core) для переиспользования между сервисами
+- **Слоистая архитектура** — разделение на API, Services, Infrastructure и Domain
+- **Unit of Work + Repository** — управление транзакциями и абстракция доступа к данным
+
+> ⚠️ **Примечание:** SQLAlchemy-модели находятся в shared-пакете для удобства разработки. В строгой Clean Architecture они относятся к инфраструктурному слою.
 
 ```mermaid
 graph TB
