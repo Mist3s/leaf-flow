@@ -21,12 +21,6 @@ class ProductsReader(Protocol):
     ) -> ProductDetailEntity | None:
         ...
 
-    async def get_multiple_with_variants(
-        self,
-        product_ids: list[str]
-    ) -> dict[str, ProductEntity]:
-        ...
-
     async def get_for_product_variant(
             self,
             product_id: str,

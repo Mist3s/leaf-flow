@@ -13,33 +13,6 @@ from leaf_flow.services import order_service
 
 router = APIRouter()
 
-
-async def _load_product_and_variant_names(order_items, uow: UoW) -> dict[tuple[str, str], tuple[str, str]]:
-    """
-    Загружает названия продуктов и веса вариантов для элементов заказа.
-    Возвращает словарь: (product_id, variant_id) -> (product_name, variant_weight)
-    """
-    product_variant_pairs = {(it.product_id, it.variant_id) for it in order_items}
-    product_ids = list({pid for pid, _ in product_variant_pairs})
-    products_map = await uow.products.get_multiple_with_variants(product_ids)
-    
-    result = {}
-    for product_id, variant_id in product_variant_pairs:
-        product = products_map.get(product_id)
-        if product:
-            product_name = product.name
-            variant_weight = None
-            for variant in product.variants:
-                if variant.id == variant_id:
-                    variant_weight = variant.weight
-                    break
-            result[(product_id, variant_id)] = (product_name, variant_weight or "")
-        else:
-            result[(product_id, variant_id)] = ("", "")
-    
-    return result
-
-
 @router.post("", response_model=OrderSummary, status_code=201)
 async def create_order(
     payload: OrderRequest,
