@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import List
+from typing import Sequence
 
 
 @dataclass(slots=True)
@@ -20,7 +20,7 @@ class CartItemEntity:
 
 @dataclass(slots=True)
 class CartEntity:
-    items: List[CartItemEntity]
+    items: Sequence[CartItemEntity]
     total_count: int
     total_price: Decimal
 

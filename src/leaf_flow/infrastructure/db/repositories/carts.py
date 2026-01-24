@@ -4,11 +4,32 @@ from typing import Sequence
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session, selectinload
 
+from leaf_flow.application.ports.cart import CartWriter, CartReader
 from leaf_flow.infrastructure.db.models.carts import Cart, CartItem
 from leaf_flow.infrastructure.db.repositories.base import Repository
+from leaf_flow.domain.entities.cart import CartEntity, CartItemEntity
+from leaf_flow.infrastructure.db.mappers.cart import map_cart_items_to_entities
 
 
-class CartRepository(Repository[Cart]):
+class CartReaderRepository(Repository[Cart], CartReader):
+    def __init__(self, session: Session):
+        super().__init__(session, Cart)
+
+    async def get_cart(self, cart_id: int) -> Sequence[CartItemEntity]:
+        stmt = (
+            select(CartItem)
+            .where(CartItem.cart_id == cart_id)
+            .options(
+                selectinload(CartItem.product),
+                selectinload(CartItem.variant),
+            )
+            .order_by(CartItem.id)
+        )
+        cart = await self.session.execute(stmt)
+        return map_cart_items_to_entities(cart.scalars().all())
+
+
+class CartWriterRepository(Repository[Cart], CartWriter):
     def __init__(self, session: Session):
         super().__init__(session, Cart)
 
@@ -25,18 +46,6 @@ class CartRepository(Repository[Cart]):
 
     async def clear(self, cart_id: int) -> None:
         await self.session.execute(delete(CartItem).where(CartItem.cart_id == cart_id))
-
-    async def list_items(self, cart_id: int) -> Sequence[CartItem]:
-        stmt = (
-            select(CartItem)
-            .where(CartItem.cart_id == cart_id)
-            .options(
-                selectinload(CartItem.product),
-                selectinload(CartItem.variant),
-            )
-            .order_by(CartItem.id)
-        )
-        return (await self.session.execute(stmt)).scalars().all()
 
     async def upsert_item(self, cart_id: int, product_id: str, variant_id: str, quantity: int, price: Decimal) -> CartItem:
         stmt = select(CartItem).where(
@@ -98,5 +107,3 @@ class CartRepository(Repository[Cart]):
             await self.session.delete(cart)
             return True
         return False
-
-

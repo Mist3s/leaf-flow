@@ -52,11 +52,6 @@ def map_product_selected_attributes(
         group_list = list(group)
         attr = group_list[0].attribute
 
-        if attr is None:
-            raise RuntimeError(
-                "ProductAttributeValue.attribute is not loaded (missing selectinload)."
-            )
-
         result.append(
             ProductAttributesEntity(
                 id=attr.id,
