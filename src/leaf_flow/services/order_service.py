@@ -1,17 +1,13 @@
 import random
 import string
 from decimal import Decimal
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from celery import Celery
 
-from leaf_flow.infrastructure.db.models.order import (
-    Order, OrderItem, DeliveryMethodEnum, OrderStatusEnum
-)
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
-from leaf_flow.domain.entities.order import OrderEntity
-from leaf_flow.infrastructure.db.mappers.order import map_order_model_to_entity
+from leaf_flow.domain.entities.order import OrderEntity, DeliveryMethod, OrderStatus
 from leaf_flow.infrastructure.db.mappers.notification import map_notifications_order_to_entity
 
 LETTERS = string.ascii_uppercase
@@ -31,7 +27,7 @@ def generate_order_id(length: int = 8) -> str:
 async def generate_unique_order_id(uow: UoW, length: int = 8, max_tries: int = 50) -> str:
     for _ in range(max_tries):
         order_id = generate_order_id(length)
-        if not await uow.orders.get(order_id):  # type: ignore[assignment]
+        if not await uow.orders_reader.get(order_id):  # type: ignore[assignment]
             return order_id
     raise RuntimeError("FAILED_TO_GENERATE_UNIQUE_ORDER_ID")
 
@@ -50,7 +46,7 @@ async def create_order(
     user_id: int,
     customer_name: str,
     phone: str,
-    delivery: DeliveryMethodEnum,
+    delivery: DeliveryMethod,
     address: str | None,
     comment: str | None,
     expected_total: Decimal | None,
@@ -68,35 +64,20 @@ async def create_order(
         expected_total,
     )
     order_id = await generate_unique_order_id(uow)
-    order = Order(
-        id=order_id,
+    order = await uow.orders_writer.create_order_with_items(
+        cart=cart,
+        order_id=order_id,
         user_id=user_id,
         customer_name=customer_name,
         phone=phone,
         delivery=delivery,
         address=address,
-        comment=comment,
-        total=cart.total_price,
-        status=OrderStatusEnum.created,
+        comment=comment
     )
-    order_items = [
-        OrderItem(
-            order_id=order_id,
-            product_id=it.product_id,
-            variant_id=it.variant_id,
-            quantity=it.quantity,
-            price=it.price,
-            total=it.total,
-        )
-        for it in cart.items
-    ]
-    await uow.orders.add_with_items(order, order_items)
     await uow.commit()
     await clear_cart(user_id, uow)
 
-    order_db = await uow.orders.get_with_items(order_id)
-
-    if not order_db:
+    if not order:
         raise ValueError("ORDER_NOT_FOUND")
     
     # Отправляем уведомление о создании заказа
@@ -106,9 +87,9 @@ async def create_order(
     ) if user.telegram_id else None
 
     entity = map_notifications_order_to_entity(
-        order=order_db,
+        order=order,
         user=user,
-        old_status=order_db.status,
+        old_status=order.status,
         support_topic=support_topic
     )
 
@@ -124,29 +105,35 @@ async def create_order(
         queue="notifications"
     )
     
-    return map_order_model_to_entity(order_db)
+    return order
 
 
 async def get_order(order_id: str, uow: UoW) -> OrderEntity | None:
-    order = await uow.orders.get_with_items(order_id)
+    order = await uow.orders_reader.get_order_with_items(order_id)
 
     if not order:
         return None
 
-    return map_order_model_to_entity(order)
+    return order
 
 
-async def list_orders_for_user(user_id: int, limit: int, offset: int, uow: UoW) -> list[OrderEntity]:
-    orders = await uow.orders.list_for_user(user_id=user_id, limit=limit, offset=offset)
-    entities: list[OrderEntity] = []
-    for order in orders:
-        entities.append(map_order_model_to_entity(order))
-    return entities
+async def list_orders_for_user(
+    user_id: int,
+    limit: int,
+    offset: int,
+    uow: UoW
+) -> Sequence[OrderEntity]:
+    orders = await uow.orders_reader.list_orders_by_user(
+        user_id=user_id,
+        limit=limit,
+        offset=offset
+    )
+    return orders
 
 
 async def update_order_status(
     order_id: str,
-    new_status: OrderStatusEnum,
+    new_status: OrderStatus,
     comment: str | None,
     uow: UoW,
     celery: Celery
@@ -167,12 +154,18 @@ async def update_order_status(
     Raises:
         ValueError: Если заказ не найден
     """
-    order = await uow.orders.get_with_items(order_id)
+    order = await uow.orders_reader.get_order_with_items(
+        order_id=order_id
+    )
+
     if not order:
         raise ValueError("ORDER_NOT_FOUND")
 
     old_status = order.status
-    order.status = new_status
+    order = await uow.orders_writer.update_order_status(
+        order_id=order_id,
+        new_status=new_status
+    )
     await uow.commit()
 
     user = await uow.users.get(order.user_id)
@@ -199,4 +192,4 @@ async def update_order_status(
         queue="notifications"
     )
 
-    return map_order_model_to_entity(order)
+    return order

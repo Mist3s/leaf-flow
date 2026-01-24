@@ -38,7 +38,10 @@ class TelegramProfile(BaseModel):
 
 
 async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthTokens, UserEntity]:
-    if not verify_telegram_webapp_request(init_data, settings.TELEGRAM_BOT_TOKEN):
+    if not verify_telegram_webapp_request(
+        init_data,
+        settings.TELEGRAM_BOT_TOKEN
+    ):
         raise ValueError("INVALID_INIT_DATA")
 
     data = dict(parse_qsl(init_data))
@@ -112,7 +115,10 @@ async def exchange_login_widget_for_tokens(
         ValueError: Если данные невалидны или устарели
     """
     # Валидация подписи и auth_date
-    if not verify_telegram_login_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
+    if not verify_telegram_login_widget(
+        widget_data,
+        settings.TELEGRAM_BOT_TOKEN
+    ):
         raise ValueError("INVALID_LOGIN_WIDGET_DATA")
     
     telegram_id = widget_data["id"]
@@ -368,7 +374,10 @@ async def link_telegram_to_user(
         ValueError: Если данные невалидны, Telegram уже привязан или занят другим аккаунтом
     """
     # Валидация подписи и auth_date
-    if not verify_telegram_login_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
+    if not verify_telegram_login_widget(
+        widget_data,
+        settings.TELEGRAM_BOT_TOKEN
+    ):
         raise ValueError("INVALID_LOGIN_WIDGET_DATA")
     
     telegram_id = widget_data["id"]
@@ -473,13 +482,13 @@ async def merge_telegram_account(
     
     # === СЛИЯНИЕ АККАУНТОВ ===
     # 1. Переносим заказы на текущего пользователя
-    await uow.orders.transfer_orders_to_user(
+    await uow.orders_writer.transfer_orders_to_user(
         from_user_id=existing_tg_user.id,
         to_user_id=current_user_id
     )
     
     # 2. Очищаем корзину старого пользователя (удаляем её)
-    await uow.carts.delete_by_user_id(existing_tg_user.id)
+    await uow.carts_writer.delete_by_user_id(existing_tg_user.id)
     
     # 3. Отзываем все refresh токены старого пользователя
     await uow.refresh_tokens.revoke_all_for_user(existing_tg_user.id, _utcnow())

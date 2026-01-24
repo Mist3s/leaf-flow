@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from leaf_flow.application.ports.order import OrderWriter, OrderReader
 from leaf_flow.infrastructure.db.repositories.user import UserRepository
 from leaf_flow.infrastructure.db.repositories.product import ProductRepository
 from leaf_flow.infrastructure.db.repositories.category import CategoryReaderRepository
 from leaf_flow.infrastructure.db.repositories.cart import CartWriterRepository, CartReaderRepository
-from leaf_flow.infrastructure.db.repositories.order import OrderRepository, OrderItemRepository
+from leaf_flow.infrastructure.db.repositories.order import OrderWriterRepository, OrderReaderRepository
 from leaf_flow.infrastructure.db.repositories.token import RefreshTokenRepository
 from leaf_flow.infrastructure.db.repositories.support_topic import SupportTopicRepository
 from leaf_flow.infrastructure.db.repositories.review import ExternalReviewReaderRepository
@@ -16,6 +17,7 @@ from leaf_flow.application.ports.review import ExternalReviewReader
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
+
 @dataclass
 class UoW:
     session: AsyncSession
@@ -24,8 +26,8 @@ class UoW:
     categories_reader: CategoryReader
     carts_writer: CartWriter
     carts_reader: CartReader
-    orders: OrderRepository
-    order_items: OrderItemRepository
+    orders_writer: OrderWriter
+    orders_reader: OrderReader
     refresh_tokens: RefreshTokenRepository
     support_topics: SupportTopicRepository
     external_reviews_reader: ExternalReviewReader
@@ -43,8 +45,8 @@ async def get_uow():
             categories_reader=CategoryReaderRepository(s),
             carts_writer=CartWriterRepository(s),
             carts_reader=CartReaderRepository(s),
-            orders=OrderRepository(s),
-            order_items=OrderItemRepository(s),
+            orders_writer=OrderWriterRepository(s),
+            orders_reader=OrderReaderRepository(s),
             refresh_tokens=RefreshTokenRepository(s),
             support_topics=SupportTopicRepository(s),
             external_reviews_reader=ExternalReviewReaderRepository(s)

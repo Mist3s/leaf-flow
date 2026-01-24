@@ -1,16 +1,15 @@
-from leaf_flow.domain.events.notification import NotificationsOrderEntity
+from leaf_flow.domain.entities.order import OrderEntity
+from leaf_flow.domain.events.notification import NotificationsOrderEntity, OrderStatus
 from leaf_flow.infrastructure.db.models import (
     SupportTopic as SupportTopicModel,
-    OrderStatusEnum as OrderStatusEnumDB,
-    User as UserModel,
-    Order as OrderModel
+    User as UserModel
 )
 
 
 def map_notifications_order_to_entity(
-    order: OrderModel,
+    order: OrderEntity,
     user: UserModel,
-    old_status: OrderStatusEnumDB,
+    old_status: OrderStatus,
     status_comment: str | None = None,
     support_topic: SupportTopicModel = None,
 ) -> NotificationsOrderEntity:
@@ -20,13 +19,13 @@ def map_notifications_order_to_entity(
     return NotificationsOrderEntity(
         order_id=order.id,
         telegram_id=user.telegram_id,
-        old_status=old_status.value,
-        new_status=order.status.value,
+        old_status=old_status,
+        new_status=order.status,
         comment=order.comment,
         phone=order.phone,
         customer_name=order.customer_name,
         total=order.total,
-        delivery_method=order.delivery.value,
+        delivery_method=order.delivery,
         email=user.email,
         address=order.address,
         status_comment=status_comment,
