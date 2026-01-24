@@ -49,7 +49,7 @@ class CartReaderRepository(Repository[Cart], CartReader):
             .where(Cart.user_id == user_id)
             .options(
                 selectinload(CartItem.product),
-                selectinload(CartItem.variant),
+                selectinload(CartItem.variant)
             )
             .order_by(CartItem.id)
         )
@@ -83,10 +83,18 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         quantity: int,
         price: Decimal
     ) -> CartItemEntity:
-        stmt = select(CartItem).where(
-            CartItem.cart_id == cart_id,
-            CartItem.product_id == product_id,
-            CartItem.variant_id == variant_id,
+        stmt = (
+            select(CartItem)
+            .where(
+                CartItem.cart_id == cart_id,
+                CartItem.product_id == product_id,
+                CartItem.variant_id == variant_id,
+            )
+            .options(
+                selectinload(CartItem.product),
+                selectinload(CartItem.variant)
+            )
+            .order_by(CartItem.id)
         )
         item = (await self.session.execute(stmt)).scalar_one_or_none()
 
@@ -104,6 +112,18 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         )
         self.session.add(item)
         await self.session.flush()
+
+        item = (
+            await self.session.scalars(
+                select(CartItem)
+                .where(CartItem.id == item.id)
+                .options(
+                    selectinload(CartItem.product),
+                    selectinload(CartItem.variant)
+                )
+            )
+        ).one()
+
         return map_cart_item_to_entities(item)
 
     async def replace_items(
@@ -131,14 +151,24 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         variant_id: str,
         quantity: int
     ) -> CartItemEntity | None:
-        stmt = select(CartItem).where(
-            CartItem.cart_id == cart_id,
-            CartItem.product_id == product_id,
-            CartItem.variant_id == variant_id,
+        stmt = (
+            select(CartItem)
+            .where(
+                CartItem.cart_id == cart_id,
+                CartItem.product_id == product_id,
+                CartItem.variant_id == variant_id
+            )
+            .options(
+                selectinload(CartItem.product),
+                selectinload(CartItem.variant)
+            )
+            .order_by(CartItem.id)
         )
         item = (await self.session.execute(stmt)).scalar_one_or_none()
+
         if not item:
             return None
+
         item.quantity = quantity
         await self.session.flush()
         return map_cart_item_to_entities(item)
@@ -150,7 +180,8 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         variant_id: str
     ) -> None:
         await self.session.execute(
-            delete(CartItem).where(
+            delete(CartItem)
+            .where(
                 CartItem.cart_id == cart_id,
                 CartItem.product_id == product_id,
                 CartItem.variant_id == variant_id,
@@ -167,7 +198,9 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         stmt = select(Cart).where(Cart.user_id == user_id)
         result = await self.session.execute(stmt)
         cart = result.scalar_one_or_none()
+
         if cart:
             await self.session.delete(cart)
             return True
+
         return False

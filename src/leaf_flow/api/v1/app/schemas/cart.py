@@ -14,8 +14,6 @@ class CartItem(BaseModel):
     productId: str = Field(validation_alias="product_id")
     variantId: str = Field(validation_alias="variant_id")
     quantity: int = Field(1, ge=1)
-    price: Decimal
-    total: Decimal
     productName: str = Field(validation_alias="product_name")
     variantWeight: str = Field(validation_alias="variant_weight")
     image: str
