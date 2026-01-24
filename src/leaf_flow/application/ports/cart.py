@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Protocol, Sequence
 
-from leaf_flow.domain.entities.cart import CartItemEntity, CartEntity
+from leaf_flow.domain.entities.cart import CartItemEntity
 
 
 class CartWriter(Protocol):
