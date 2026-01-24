@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Sequence
 
@@ -20,8 +21,13 @@ class CartItemEntity:
 
 @dataclass(slots=True)
 class CartEntity:
+    id: int
+    user_id: int
+    updated_at: datetime
+
+
+@dataclass(slots=True)
+class CartDetailEntity:
     items: Sequence[CartItemEntity]
     total_count: int
     total_price: Decimal
-
-

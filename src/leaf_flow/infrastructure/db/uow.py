@@ -9,6 +9,10 @@ from leaf_flow.infrastructure.db.repositories.orders import OrderRepository, Ord
 from leaf_flow.infrastructure.db.repositories.tokens import RefreshTokenRepository
 from leaf_flow.infrastructure.db.repositories.support_topics import SupportTopicRepository
 from leaf_flow.infrastructure.db.repositories.reviews import ExternalReviewReaderRepository
+from leaf_flow.application.ports.products import ProductsReader
+from leaf_flow.application.ports.cart import CartWriter, CartReader
+from leaf_flow.application.ports.category import CategoryReader
+from leaf_flow.application.ports.review import ExternalReviewReader
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -16,15 +20,15 @@ from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 class UoW:
     session: AsyncSession
     users: UserRepository
-    products: ProductRepository
-    categories_reader: CategoryReaderRepository
-    carts_writer: CartWriterRepository
-    carts_reader: CartReaderRepository
+    products: ProductsReader
+    categories_reader: CategoryReader
+    carts_writer: CartWriter
+    carts_reader: CartReader
     orders: OrderRepository
     order_items: OrderItemRepository
     refresh_tokens: RefreshTokenRepository
     support_topics: SupportTopicRepository
-    external_reviews_reader: ExternalReviewReaderRepository
+    external_reviews_reader: ExternalReviewReader
     async def flush(self): await self.session.flush()
     async def commit(self): await self.session.commit()
     async def rollback(self): await self.session.rollback()

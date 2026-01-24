@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 
 
@@ -10,28 +10,23 @@ class CartItemInput(BaseModel):
     quantity: int = Field(1, ge=1)
 
 
-class CartItem(CartItemInput):
+class CartItem(BaseModel):
+    productId: str = Field(validation_alias="product_id")
+    variantId: str = Field(validation_alias="variant_id")
+    quantity: int = Field(1, ge=1)
     price: Decimal
     total: Decimal
-    productName: str
-    variantWeight: str
+    productName: str = Field(validation_alias="product_name")
+    variantWeight: str = Field(validation_alias="variant_weight")
     image: str
-
-
-class CartItemAdd(CartItemInput):
     price: Decimal
     total: Decimal
 
 
-class CartAdd(BaseModel):
-    items: List[CartItemAdd]
-    totalCount: int
-    totalPrice: Decimal
-    updatedAt: datetime | None = None
-
-
-class Cart(BaseModel):
+class CartSchema(BaseModel):
     items: List[CartItem]
-    totalCount: int
-    totalPrice: Decimal
+    totalCount: int = Field(validation_alias="total_count")
+    totalPrice: Decimal = Field(validation_alias="total_price")
     updatedAt: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

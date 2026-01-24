@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
 
 from leaf_flow.api.deps import get_current_user, uow_dep
-from leaf_flow.api.v1.app.schemas.cart import Cart as CartSchema, CartItemInput, CartItem, CartItemAdd, CartAdd
+from leaf_flow.api.v1.app.schemas.cart import CartSchema, CartItemInput
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import cart_service
@@ -17,24 +17,7 @@ async def get_cart(
     uow: UoW = Depends(uow_dep)
 ) -> CartSchema:
     cart = await cart_service.get_cart(user.id, uow)
-    return CartSchema(
-        items=[
-            CartItem(
-                productId=it.product_id,
-                variantId=it.variant_id,
-                quantity=it.quantity,
-                price=it.price,
-                total=it.total,
-                productName=it.product_name,
-                variantWeight=it.variant_weight,
-                image=it.image,
-            )
-            for it in cart.items
-        ],
-        totalCount=cart.total_count,
-        totalPrice=cart.total_price,
-        updatedAt=None,
-    )
+    return CartSchema.model_validate(cart, from_attributes=True)
 
 
 @router.delete("", status_code=204)
@@ -46,12 +29,12 @@ async def clear_cart(
     return None
 
 
-@router.post("/items", response_model=CartAdd)
+@router.post("/items", response_model=CartSchema)
 async def add_item(
     payload: CartItemInput,
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep)
-) -> CartAdd:
+) -> CartSchema:
     try:
         cart = await cart_service.add_item(
             user.id,
@@ -62,33 +45,19 @@ async def add_item(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return CartAdd(
-        items=[
-            CartItemAdd(
-                productId=it.product_id,
-                variantId=it.variant_id,
-                quantity=it.quantity,
-                price=it.price,
-                total=it.total
-            )
-            for it in cart.items
-        ],
-        totalCount=cart.total_count,
-        totalPrice=cart.total_price,
-        updatedAt=None,
-    )
+    return CartSchema.model_validate(cart, from_attributes=True)
 
 
 class ReplaceCartPayload(BaseModel):
     items: list[CartItemInput]
 
 
-@router.put("/items", response_model=CartAdd)
+@router.put("/items", response_model=CartSchema)
 async def replace_items(
     payload: ReplaceCartPayload,
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep)
-) -> CartAdd:
+) -> CartSchema:
     try:
         items_tuples = [
             (
@@ -102,21 +71,7 @@ async def replace_items(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return CartAdd(
-        items=[
-            CartItemAdd(
-                productId=it.product_id,
-                variantId=it.variant_id,
-                quantity=it.quantity,
-                price=it.price,
-                total=it.total
-            )
-            for it in cart.items
-        ],
-        totalCount=cart.total_count,
-        totalPrice=cart.total_price,
-        updatedAt=None,
-    )
+    return CartSchema.model_validate(cart, from_attributes=True)
 
 
 @router.patch("/items/{product_id}/{variant_id}", response_model=CartSchema)
@@ -136,43 +91,15 @@ async def update_quantity(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return CartSchema(
-        items=[
-            CartItem(
-                productId=it.product_id,
-                variantId=it.variant_id,
-                quantity=it.quantity,
-                price=it.price,
-                total=it.total
-            )
-            for it in cart.items
-        ],
-        totalCount=cart.total_count,
-        totalPrice=cart.total_price,
-        updatedAt=None,
-    )
+    return CartSchema.model_validate(cart, from_attributes=True)
 
 
-@router.delete("/items/{product_id}/{variant_id}", response_model=CartAdd)
+@router.delete("/items/{product_id}/{variant_id}", response_model=CartSchema)
 async def remove_item(
     product_id: str,
     variant_id: str,
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep),
-) -> CartAdd:
+) -> CartSchema:
     cart = await cart_service.remove_item(user.id, product_id, variant_id, uow)
-    return CartAdd(
-        items=[
-            CartItemAdd(
-                productId=it.product_id,
-                variantId=it.variant_id,
-                quantity=it.quantity,
-                price=it.price,
-                total=it.total
-            )
-            for it in cart.items
-        ],
-        totalCount=cart.total_count,
-        totalPrice=cart.total_price,
-        updatedAt=None,
-    )
+    return CartSchema.model_validate(cart, from_attributes=True)
