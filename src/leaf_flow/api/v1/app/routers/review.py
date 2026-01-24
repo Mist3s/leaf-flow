@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from leaf_flow.api.deps import uow_dep
-from leaf_flow.api.v1.app.schemas.reviews import (
+from leaf_flow.api.v1.app.schemas.review import (
     ExternalReviewsStats,
     ExternalReview,
     ResponseStatsExternalReviews,

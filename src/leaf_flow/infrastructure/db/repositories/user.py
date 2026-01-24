@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from leaf_flow.infrastructure.db.models.users import User
+from leaf_flow.infrastructure.db.models.user import User
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status, Response
 
 from leaf_flow.api.deps import uow_dep, require_internal_auth
-from leaf_flow.api.v1.internal.schemas.support_topics import (
+from leaf_flow.api.v1.internal.schemas.support_topic import (
     SupportTopicPublic,
     SupportTopicEnsureRequest,
     SupportTopicByThreadResponse,

@@ -4,7 +4,7 @@ from typing import Sequence
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from leaf_flow.infrastructure.db.models.tokens import RefreshToken
+from leaf_flow.infrastructure.db.models.token import RefreshToken
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 

@@ -1,4 +1,4 @@
-from leaf_flow.infrastructure.db.models.support_topics import SupportTopic
+from leaf_flow.infrastructure.db.models.support_topic import SupportTopic
 from leaf_flow.infrastructure.db.uow import UoW
 
 

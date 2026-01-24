@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.category import CategoryReader
 from leaf_flow.infrastructure.db.mappers.category import map_product_category_model_to_entity
-from leaf_flow.infrastructure.db.models.products import Category
+from leaf_flow.infrastructure.db.models.product import Category
 from leaf_flow.infrastructure.db.repositories.base import Repository
 from leaf_flow.domain.entities.category import CategoryEntity
 

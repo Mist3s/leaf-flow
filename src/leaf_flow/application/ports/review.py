@@ -1,6 +1,6 @@
 from typing import Protocol, Sequence
 
-from leaf_flow.domain.entities.reviews import (
+from leaf_flow.domain.entities.review import (
     ExternalReviewEntity,
     ReviewPlatformStatsEntity
 )

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from leaf_flow.api.deps import uow_dep, require_internal_auth
-from leaf_flow.api.v1.internal.schemas.users import InternalUserPublic, TelegramBotRegisterRequest
+from leaf_flow.api.v1.internal.schemas.user import InternalUserPublic, TelegramBotRegisterRequest
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.auth_service import register_user_from_bot
 

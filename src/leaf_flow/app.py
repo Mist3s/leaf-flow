@@ -9,11 +9,11 @@ from redis.asyncio import Redis
 from leaf_flow.api.v1.auth.routers.auth import router as auth_router
 from leaf_flow.api.v1.app.routers.catalog import router as catalog_router
 from leaf_flow.api.v1.app.routers.cart import router as cart_router
-from leaf_flow.api.v1.app.routers.orders import router as orders_router
-from leaf_flow.api.v1.app.routers.reviews import router as reviews_router
-from leaf_flow.api.v1.internal.routers.users import router as internal_users_router
-from leaf_flow.api.v1.internal.routers.orders import router as internal_orders_router
-from leaf_flow.api.v1.internal.routers.support_topics import router as internal_support_topics_router
+from leaf_flow.api.v1.app.routers.order import router as orders_router
+from leaf_flow.api.v1.app.routers.review import router as reviews_router
+from leaf_flow.api.v1.internal.routers.user import router as internal_users_router
+from leaf_flow.api.v1.internal.routers.order import router as internal_orders_router
+from leaf_flow.api.v1.internal.routers.support_topic import router as internal_support_topics_router
 from leaf_flow.config import settings
 
 

@@ -1,15 +1,15 @@
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from leaf_flow.infrastructure.db.repositories.users import UserRepository
-from leaf_flow.infrastructure.db.repositories.products import ProductRepository
-from leaf_flow.infrastructure.db.repositories.categories import CategoryReaderRepository
-from leaf_flow.infrastructure.db.repositories.carts import CartWriterRepository, CartReaderRepository
-from leaf_flow.infrastructure.db.repositories.orders import OrderRepository, OrderItemRepository
-from leaf_flow.infrastructure.db.repositories.tokens import RefreshTokenRepository
-from leaf_flow.infrastructure.db.repositories.support_topics import SupportTopicRepository
-from leaf_flow.infrastructure.db.repositories.reviews import ExternalReviewReaderRepository
-from leaf_flow.application.ports.products import ProductsReader
+from leaf_flow.infrastructure.db.repositories.user import UserRepository
+from leaf_flow.infrastructure.db.repositories.product import ProductRepository
+from leaf_flow.infrastructure.db.repositories.category import CategoryReaderRepository
+from leaf_flow.infrastructure.db.repositories.cart import CartWriterRepository, CartReaderRepository
+from leaf_flow.infrastructure.db.repositories.order import OrderRepository, OrderItemRepository
+from leaf_flow.infrastructure.db.repositories.token import RefreshTokenRepository
+from leaf_flow.infrastructure.db.repositories.support_topic import SupportTopicRepository
+from leaf_flow.infrastructure.db.repositories.review import ExternalReviewReaderRepository
+from leaf_flow.application.ports.product import ProductsReader
 from leaf_flow.application.ports.cart import CartWriter, CartReader
 from leaf_flow.application.ports.category import CategoryReader
 from leaf_flow.application.ports.review import ExternalReviewReader

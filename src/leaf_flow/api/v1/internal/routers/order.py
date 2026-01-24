@@ -2,12 +2,12 @@ from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 
 from leaf_flow.api.deps import uow_dep, require_internal_auth, get_celery
-from leaf_flow.api.v1.internal.schemas.orders import (
+from leaf_flow.api.v1.internal.schemas.order import (
     InternalOrderListResponse, InternalOrderListItem, UpdateOrderStatusRequest,
     InternalOrderDetails, InternalCartItem
 )
 from leaf_flow.infrastructure.db.uow import UoW
-from leaf_flow.infrastructure.db.models.orders import OrderStatusEnum
+from leaf_flow.infrastructure.db.models.order import OrderStatusEnum
 from leaf_flow.services import order_service
 
 

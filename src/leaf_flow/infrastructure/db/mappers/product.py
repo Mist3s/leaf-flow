@@ -9,7 +9,7 @@ from leaf_flow.domain.entities.product import (
     BrewProfileEntity,
     ProductImageEntity
 )
-from leaf_flow.infrastructure.db.models.products import (
+from leaf_flow.infrastructure.db.models.product import (
     Product as ProductModel,
     ProductVariant as ProductVariantModel,
     ProductAttributeValue as ProductAttributeValueModel,

@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.cart import CartWriter, CartReader
-from leaf_flow.infrastructure.db.models.carts import Cart, CartItem
+from leaf_flow.infrastructure.db.models.cart import Cart, CartItem
 from leaf_flow.infrastructure.db.repositories.base import Repository
 from leaf_flow.domain.entities.cart import (
     CartDetailEntity,

@@ -8,9 +8,9 @@ from leaf_flow.infrastructure.db.mappers.review import (
     map_external_review_model_to_entity,
     map_review_stats_model_to_entity
 )
-from leaf_flow.infrastructure.db.models.reviews import ExternalReview
+from leaf_flow.infrastructure.db.models.review import ExternalReview
 from leaf_flow.infrastructure.db.repositories.base import Repository
-from leaf_flow.domain.entities.reviews import (
+from leaf_flow.domain.entities.review import (
     ExternalReviewEntity,
     ReviewPlatformStatsEntity
 )

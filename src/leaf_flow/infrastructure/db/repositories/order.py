@@ -3,7 +3,7 @@ from typing import Sequence
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
-from leaf_flow.infrastructure.db.models.orders import Order, OrderItem
+from leaf_flow.infrastructure.db.models.order import Order, OrderItem
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 

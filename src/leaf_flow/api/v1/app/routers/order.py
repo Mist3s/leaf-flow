@@ -2,10 +2,10 @@ from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from leaf_flow.api.deps import get_current_user, uow_dep, get_celery
-from leaf_flow.api.v1.app.schemas.orders import (
+from leaf_flow.api.v1.app.schemas.order import (
     OrderRequest, OrderSummary, OrderDetails, OrderListItem, OrderItemDetails
 )
-from leaf_flow.infrastructure.db.models.orders import DeliveryMethodEnum
+from leaf_flow.infrastructure.db.models.order import DeliveryMethodEnum
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import order_service

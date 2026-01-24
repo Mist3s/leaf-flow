@@ -1,4 +1,4 @@
-from leaf_flow.domain.externals.notifications import NotificationsOrderEntity
+from leaf_flow.domain.events.notification import NotificationsOrderEntity
 from leaf_flow.infrastructure.db.models import (
     SupportTopic as SupportTopicModel,
     OrderStatusEnum as OrderStatusEnumDB,

@@ -4,10 +4,10 @@ from sqlalchemy import select, func, or_, tuple_
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from leaf_flow.application.ports.products import ProductsReader
+from leaf_flow.application.ports.product import ProductsReader
 from leaf_flow.domain.entities.product import ProductEntity, ProductDetailEntity, ProductVariantEntity
 
-from leaf_flow.infrastructure.db.models.products import (
+from leaf_flow.infrastructure.db.models.product import (
     Product, ProductVariant, ProductAttributeValue,
     ProductBrewProfile, ProductImage, ProductAttribute
 )

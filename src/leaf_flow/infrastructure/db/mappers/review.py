@@ -1,7 +1,7 @@
 from sqlalchemy.engine import Row
 
-from leaf_flow.domain.entities.reviews import ExternalReviewEntity, ReviewPlatformStatsEntity
-from leaf_flow.infrastructure.db.models.reviews import ExternalReview as ExternalReviewModel
+from leaf_flow.domain.entities.review import ExternalReviewEntity, ReviewPlatformStatsEntity
+from leaf_flow.infrastructure.db.models.review import ExternalReview as ExternalReviewModel
 
 
 def map_external_review_model_to_entity(
