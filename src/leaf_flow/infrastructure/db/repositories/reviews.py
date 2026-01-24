@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from sqlalchemy import select, func, cast, Float
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.review import ExternalReviewReader
 from leaf_flow.infrastructure.db.mappers.review import (
@@ -17,7 +17,7 @@ from leaf_flow.domain.entities.reviews import (
 
 
 class ExternalReviewReaderRepository(Repository[ExternalReview], ExternalReviewReader):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         super().__init__(session, ExternalReview)
 
     async def get_list(self) -> Sequence[ExternalReviewEntity] | None:

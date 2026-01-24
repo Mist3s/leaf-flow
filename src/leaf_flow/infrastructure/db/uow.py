@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.infrastructure.db.repositories.users import UserRepository
 from leaf_flow.infrastructure.db.repositories.products import ProductRepository
-from leaf_flow.infrastructure.db.repositories.categories import CategoryRepository
+from leaf_flow.infrastructure.db.repositories.categories import CategoryReaderRepository
 from leaf_flow.infrastructure.db.repositories.carts import CartWriterRepository, CartReaderRepository
 from leaf_flow.infrastructure.db.repositories.orders import OrderRepository, OrderItemRepository
 from leaf_flow.infrastructure.db.repositories.tokens import RefreshTokenRepository
@@ -17,7 +17,7 @@ class UoW:
     session: AsyncSession
     users: UserRepository
     products: ProductRepository
-    categories: CategoryRepository
+    categories_reader: CategoryReaderRepository
     carts_writer: CartWriterRepository
     carts_reader: CartReaderRepository
     orders: OrderRepository
@@ -36,7 +36,7 @@ async def get_uow():
             session=s,
             users=UserRepository(s),
             products=ProductRepository(s),
-            categories=CategoryRepository(s),
+            categories_reader=CategoryReaderRepository(s),
             carts_writer=CartWriterRepository(s),
             carts_reader=CartReaderRepository(s),
             orders=OrderRepository(s),

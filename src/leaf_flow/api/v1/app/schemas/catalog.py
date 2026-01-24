@@ -95,8 +95,10 @@ class ProductDetail(BaseModel):
 
 
 class Category(BaseModel):
-    id: ProductCategory
+    id: str = Field(validation_alias="slug")
     label: str
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class ProductVariant(BaseModel):

@@ -1,11 +1,12 @@
 from typing import Sequence
 
+from leaf_flow.domain.entities.category import CategoryEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.domain.entities.product import ProductEntity
 
 
-async def list_categories(uow: UoW) -> list[dict[str, str]]:
-    return await uow.products.list_categories()
+async def list_categories(uow: UoW) -> Sequence[CategoryEntity]:
+    return await uow.categories_reader.list_categories()
 
 
 async def list_products(

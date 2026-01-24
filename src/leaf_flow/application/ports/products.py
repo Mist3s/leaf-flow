@@ -6,9 +6,6 @@ from leaf_flow.domain.entities.product import (
 
 
 class ProductsReader(Protocol):
-    async def list_categories(self) -> list[dict[str, str]]:
-        ...
-
     async def get_list_products(
         self,
         category_slug: str | None,

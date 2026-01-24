@@ -8,7 +8,7 @@ from leaf_flow.application.ports.products import ProductsReader
 from leaf_flow.domain.entities.product import ProductEntity, ProductDetailEntity, ProductVariantEntity
 
 from leaf_flow.infrastructure.db.models.products import (
-    Product, ProductVariant, Category, ProductAttributeValue,
+    Product, ProductVariant, ProductAttributeValue,
     ProductBrewProfile, ProductImage, ProductAttribute
 )
 from leaf_flow.infrastructure.db.repositories.base import Repository
@@ -21,10 +21,6 @@ from leaf_flow.infrastructure.db.mappers.product import (
 class ProductRepository(Repository[Product], ProductsReader):
     def __init__(self, session: AsyncSession):
         super().__init__(session, Product)
-
-    async def list_categories(self) -> list[dict[str, str]]:
-        rows = (await self.session.execute(select(Category))).scalars().all()
-        return [{"id": c.slug, "label": c.label} for c in rows]
 
     async def get_list_products(
         self,

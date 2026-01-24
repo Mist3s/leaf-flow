@@ -5,5 +5,3 @@ from dataclasses import dataclass
 class CategoryEntity:
     slug: str
     label: str
-
-

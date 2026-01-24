@@ -2,17 +2,18 @@ from decimal import Decimal
 from typing import Sequence
 
 from sqlalchemy import select, delete
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.cart import CartWriter, CartReader
 from leaf_flow.infrastructure.db.models.carts import Cart, CartItem
 from leaf_flow.infrastructure.db.repositories.base import Repository
-from leaf_flow.domain.entities.cart import CartEntity, CartItemEntity
+from leaf_flow.domain.entities.cart import CartItemEntity
 from leaf_flow.infrastructure.db.mappers.cart import map_cart_items_to_entities
 
 
 class CartReaderRepository(Repository[Cart], CartReader):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         super().__init__(session, Cart)
 
     async def get_cart(self, cart_id: int) -> Sequence[CartItemEntity]:
@@ -30,7 +31,7 @@ class CartReaderRepository(Repository[Cart], CartReader):
 
 
 class CartWriterRepository(Repository[Cart], CartWriter):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         super().__init__(session, Cart)
 
     async def get_or_create_by_user(self, user_id: int) -> Cart:

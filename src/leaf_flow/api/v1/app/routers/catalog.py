@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Path
 
 from leaf_flow.api.deps import uow_dep
-from leaf_flow.api.v1.app.schemas.catalog import Category, Product, CategoryListResponse, ProductListResponse, \
-    ProductDetail
+from leaf_flow.api.v1.app.schemas.catalog import (
+    Category, Product, CategoryListResponse,
+    ProductListResponse, ProductDetail
+)
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import catalog_service
 
@@ -12,13 +14,11 @@ router = APIRouter()
 
 @router.get("/categories", response_model=CategoryListResponse)
 async def list_categories(uow: UoW = Depends(uow_dep)) -> CategoryListResponse:
-    items = await catalog_service.list_categories(uow)
+    categories = await catalog_service.list_categories(uow)
     return CategoryListResponse(
         items=[
-            Category(
-                id=i["id"],
-                label=i["label"]
-            ) for i in items
+            Category.model_validate(category, from_attributes=True)
+            for category in categories
         ]
     )
 
