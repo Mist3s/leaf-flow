@@ -1,12 +1,13 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from redis.asyncio import Redis
 
 from leaf_flow.api.v1.auth.routers.auth import router as auth_router
+from leaf_flow.api.v1.auth.routers.telegram import router as telegram_router
 from leaf_flow.api.v1.app.routers.catalog import router as catalog_router
 from leaf_flow.api.v1.app.routers.cart import router as cart_router
 from leaf_flow.api.v1.app.routers.order import router as orders_router
@@ -56,14 +57,18 @@ def create_app() -> FastAPI:
     static_images_dir = Path(settings.IMAGES_DIR)
     app.mount("/images", StaticFiles(directory=static_images_dir), name="images")
 
-    app.include_router(auth_router, prefix="/v1/auth", tags=["auth"])
-    app.include_router(catalog_router, prefix="/v1/catalog", tags=["catalog"])
-    app.include_router(cart_router, prefix="/v1/cart", tags=["cart"])
-    app.include_router(orders_router, prefix="/v1/orders", tags=["orders"])
-    app.include_router(reviews_router, prefix="/v1/reviews", tags=["reviews"])
-    app.include_router(internal_users_router, prefix="/v1/internal/users", tags=["internal"])
-    app.include_router(internal_orders_router, prefix="/v1/internal/orders", tags=["internal"])
-    app.include_router(internal_support_topics_router, prefix="/v1/internal/support-topics", tags=["internal"])
+    api_v1 = APIRouter(prefix="/v1")
+
+    api_v1.include_router(auth_router)
+    api_v1.include_router(telegram_router)
+    api_v1.include_router(catalog_router)
+    api_v1.include_router(cart_router)
+    api_v1.include_router(orders_router)
+    api_v1.include_router(reviews_router)
+    api_v1.include_router(internal_users_router)
+    api_v1.include_router(internal_orders_router)
+    api_v1.include_router(internal_support_topics_router)
+    app.include_router(api_v1)
     return app
 
 

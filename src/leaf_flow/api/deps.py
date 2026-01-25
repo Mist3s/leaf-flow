@@ -7,7 +7,7 @@ from leaf_flow.infrastructure.db.uow import UoW, get_uow
 from leaf_flow.services.security import decode_access_token
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.mappers.user import map_user_model_to_entity
-from leaf_flow.infrastructure.externals.celery_client import celery_client
+from leaf_flow.infrastructure.externals.celery.celery_client import celery_client
 from leaf_flow.config import settings
 
 _internal_http_bearer = HTTPBearer(auto_error=False)

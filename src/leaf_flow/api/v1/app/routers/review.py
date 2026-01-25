@@ -11,7 +11,7 @@ from leaf_flow.api.v1.app.schemas.review import (
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import review_service
 
-router = APIRouter()
+router = APIRouter(prefix="/reviews", tags=["reviews"])
 
 @router.get("/external/stats", response_model=ResponseStatsExternalReviews)
 async def get_external_reviews_stats(uow: UoW = Depends(uow_dep)) -> ResponseStatsExternalReviews:

@@ -11,7 +11,7 @@ from leaf_flow.infrastructure.db.models.order import OrderStatusEnum
 from leaf_flow.services import order_service
 
 
-router = APIRouter()
+router = APIRouter(prefix="/internal/orders", tags=["internal"])
 
 
 @router.get("", response_model=InternalOrderListResponse)

@@ -11,7 +11,7 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import order_service
 
 
-router = APIRouter()
+router = APIRouter(prefix="/orders", tags=["orders"])
 
 @router.post("", response_model=OrderSummary, status_code=201)
 async def create_order(

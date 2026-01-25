@@ -6,7 +6,7 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.auth_service import register_user_from_bot
 
 
-router = APIRouter()
+router = APIRouter(prefix="/internal/users", tags=["internal"])
 
 
 @router.get("/by-telegram/{telegram_id}", response_model=InternalUserPublic, responses={404: {"description": "Not Found"}})

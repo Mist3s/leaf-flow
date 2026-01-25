@@ -10,7 +10,7 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import support_topic_service
 
 
-router = APIRouter()
+router = APIRouter(prefix="/internal/support-topics", tags=["internal"])
 
 
 @router.get(

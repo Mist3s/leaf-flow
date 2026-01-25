@@ -9,7 +9,7 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import catalog_service
 
 
-router = APIRouter()
+router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 
 @router.get("/categories", response_model=CategoryListResponse)

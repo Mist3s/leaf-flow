@@ -8,7 +8,7 @@ from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import cart_service
 
 
-router = APIRouter()
+router = APIRouter(prefix="/cart", tags=["cart"])
 
 
 @router.get("", response_model=CartSchema)

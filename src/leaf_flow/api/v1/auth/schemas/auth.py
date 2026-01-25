@@ -1,16 +1,13 @@
-from pydantic import BaseModel, EmailStr, Field
-
-
-class TelegramInitRequest(BaseModel):
-    initData: str
-    appVersion: str | None = None
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 class AuthTokens(BaseModel):
-    accessToken: str
-    refreshToken: str
-    expiresIn: int
-    refreshExpiresIn: int
+    accessToken: str = Field(validation_alias="access_token")
+    refreshToken: str = Field(validation_alias="refresh_token")
+    expiresIn: int = Field(validation_alias="expires_in")
+    refreshExpiresIn: int = Field(validation_alias="refresh_expires_in")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class UserProfile(BaseModel):
@@ -34,20 +31,6 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-
-
-class TelegramLoginWidgetRequest(BaseModel):
-    """
-    Payload от Telegram Login Widget.
-    https://core.telegram.org/widgets/login
-    """
-    id: int
-    first_name: str
-    last_name: str | None = None
-    username: str | None = None
-    photo_url: str | None = None
-    auth_date: int
-    hash: str
 
 
 class AuthResponse(BaseModel):
@@ -86,5 +69,3 @@ class SetEmailRequest(BaseModel):
     """Запрос на установку email (для пользователей без email)."""
     email: EmailStr
     password: str = Field(..., min_length=8, description="Пароль для нового email-аккаунта")
-
-
