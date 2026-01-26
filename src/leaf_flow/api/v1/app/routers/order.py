@@ -77,8 +77,8 @@ async def get_order(
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep),
 ) -> OrderDetails:
-    order_tuple = await order_service.get_order(order_id, uow)
-    order = order_tuple
+    order = await order_service.get_order(order_id, uow)
+
     if not order:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

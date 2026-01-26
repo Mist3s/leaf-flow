@@ -10,7 +10,8 @@ from leaf_flow.api.v1.auth.schemas.auth import (
     LoginRequest,
     UpdateProfileRequest,
     ChangePasswordRequest,
-    SetEmailRequest
+    SetEmailRequest,
+    RefreshRequest
 )
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
@@ -34,8 +35,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
         401: {"model": ErrorResponse}
     }
 )
-async def refresh(payload: dict, uow: UoW = Depends(uow_dep)) -> AuthTokens:
-    refresh_token = payload.get("refreshToken")
+async def refresh(payload: RefreshRequest, uow: UoW = Depends(uow_dep)) -> AuthTokens:
+    refresh_token = payload.refreshToken
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="refreshToken is required")
     try:

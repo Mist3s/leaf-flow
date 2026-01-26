@@ -68,7 +68,6 @@ async def create_order(
         address=address,
         comment=comment
     )
-    await uow.commit()
     await clear_cart(user_id, uow)
 
     if not order:

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
 
 from leaf_flow.api.deps import get_current_user, uow_dep
-from leaf_flow.api.v1.app.schemas.cart import CartSchema, CartItemInput
+from leaf_flow.api.v1.app.schemas.cart import CartSchema, CartItemInput, UpdateQuantityRequest
 from leaf_flow.domain.entities.user import UserEntity
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services import cart_service
@@ -76,18 +76,15 @@ async def replace_items(
 
 @router.patch("/items/{product_id}/{variant_id}", response_model=CartSchema)
 async def update_quantity(
-    product_id: str = Path(...),
-    variant_id: str = Path(...),
-    payload: dict = None,
+    product_id: str,
+    variant_id: str,
+    payload: UpdateQuantityRequest,
     user: UserEntity = Depends(get_current_user),
     uow: UoW = Depends(uow_dep),
 ) -> CartSchema:
-    quantity = (payload or {}).get("quantity")
-    if quantity is None:
-        raise HTTPException(status_code=400, detail="quantity is required")
     try:
         cart = await cart_service.set_quantity(
-            user.id, product_id, variant_id, int(quantity), uow
+            user.id, product_id, variant_id, payload.quantity, uow
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

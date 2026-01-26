@@ -54,7 +54,7 @@ def verify_telegram_webapp_request(encoded_init_data: str, bot_token: str) -> bo
     calculated_hash = hmac.new(
         key=secret_key.digest(), msg=data_check_string.encode(), digestmod=hashlib.sha256
     ).hexdigest()
-    return calculated_hash == hash_
+    return hmac.compare_digest(calculated_hash, hash_)
 
 
 def verify_telegram_login_widget(data: dict[str, Any], bot_token: str, max_age_seconds: int = 86400) -> bool:
