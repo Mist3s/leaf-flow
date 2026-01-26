@@ -445,16 +445,7 @@ async def merge_telegram_account(
         to_user_id=current_user_id
     )
     
-    # # 2. Очищаем корзину старого пользователя (удаляем её)
-    # await uow.carts_writer.delete_by_user_id(existing_tg_user.id)
-    #
-    # # 3. Отзываем все refresh токены старого пользователя
-    # await uow.refresh_tokens_writer.revoke_all_for_user(
-    #     existing_tg_user.id,
-    #     _utcnow()
-    # )
-    
-    # 4. Удаляем старого пользователя и сразу применяем изменения,
+    # 2. Удаляем старого пользователя и сразу применяем изменения,
     #    чтобы освободить telegram_id до UPDATE
     await uow.users_writer.delete(existing_tg_user.id)
 

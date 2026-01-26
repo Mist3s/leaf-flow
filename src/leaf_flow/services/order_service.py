@@ -27,7 +27,7 @@ def generate_order_id(length: int = 8) -> str:
 async def generate_unique_order_id(uow: UoW, length: int = 8, max_tries: int = 50) -> str:
     for _ in range(max_tries):
         order_id = generate_order_id(length)
-        if not await uow.orders_reader.get(order_id):  # type: ignore[assignment]
+        if not await uow.orders_reader.get_order_with_items(order_id):
             return order_id
     raise RuntimeError("FAILED_TO_GENERATE_UNIQUE_ORDER_ID")
 
