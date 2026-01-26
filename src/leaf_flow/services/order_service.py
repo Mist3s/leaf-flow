@@ -56,13 +56,7 @@ async def create_order(
     cart = await get_cart(user_id, uow)
     if not cart.items:
         raise ValueError("CART_EMPTY")
-    _ensure_totals_match(
-        [
-            type("X", (), {"price": it.price, "quantity": it.quantity})  # minimal adapter
-            for it in cart.items
-        ],
-        expected_total,
-    )
+    _ensure_totals_match(cart.items, expected_total)
     order_id = await generate_unique_order_id(uow)
     order = await uow.orders_writer.create_order_with_items(
         cart=cart,
