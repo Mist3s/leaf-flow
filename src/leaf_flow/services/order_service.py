@@ -82,7 +82,7 @@ async def create_order(
     
     # Отправляем уведомление о создании заказа
     user = await uow.users_reader.get_by_id(user_id)
-    support_topic = await uow.support_topics.get_by_user_telegram_id(
+    support_topic = await uow.support_topics_reader.get_by_user_telegram_id(
         user.telegram_id
     ) if user.telegram_id else None
 
@@ -169,7 +169,7 @@ async def update_order_status(
     await uow.commit()
 
     user = await uow.users_reader.get_by_id(order.user_id)
-    support_topic = await uow.support_topics.get_by_user_telegram_id(
+    support_topic = await uow.support_topics_reader.get_by_user_telegram_id(
         user.telegram_id
     ) if user.telegram_id else None
 

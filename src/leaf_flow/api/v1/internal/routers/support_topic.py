@@ -26,12 +26,7 @@ async def get_by_telegram(
     topic = await support_topic_service.get_by_telegram(user_telegram_id, uow)
     if not topic:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Support topic not found")
-    return SupportTopicPublic(
-        id=topic.id,
-        user_telegram_id=topic.user_telegram_id,
-        admin_chat_id=topic.admin_chat_id,
-        thread_id=topic.thread_id,
-    )
+    return SupportTopicPublic.model_validate(topic, from_attributes=True)
 
 
 @router.post(
@@ -49,7 +44,7 @@ async def ensure_support_topic(
             user_telegram_id=payload.user_telegram_id,
             admin_chat_id=payload.admin_chat_id,
             thread_id=payload.thread_id,
-            uow=uow,
+            uow=uow
         )
     except ValueError as e:
         if str(e) == "CONFLICT_USER":
@@ -66,14 +61,11 @@ async def ensure_support_topic(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Bad request",
         )
+
     if created:
         response.status_code = status.HTTP_201_CREATED
-    return SupportTopicPublic(
-        id=topic.id,
-        user_telegram_id=topic.user_telegram_id,
-        admin_chat_id=topic.admin_chat_id,
-        thread_id=topic.thread_id,
-    )
+
+    return SupportTopicPublic.model_validate(topic, from_attributes=True)
 
 
 @router.get(
@@ -89,9 +81,8 @@ async def get_by_thread(
 ) -> SupportTopicByThreadResponse:
     topic = await support_topic_service.get_by_thread(admin_chat_id, thread_id, uow)
     if not topic:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Support topic not found")
-    return SupportTopicByThreadResponse(
-        user_telegram_id=topic.user_telegram_id,
-        thread_id=topic.thread_id,
-        admin_chat_id=topic.admin_chat_id,
-    )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Support topic not found"
+        )
+    return SupportTopicByThreadResponse.model_validate(topic, from_attributes=True)

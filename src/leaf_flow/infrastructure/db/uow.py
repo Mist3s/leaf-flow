@@ -10,7 +10,9 @@ from leaf_flow.infrastructure.db.repositories.order import OrderWriterRepository
 from leaf_flow.infrastructure.db.repositories.token import (
     RefreshTokenReaderRepository, RefreshTokenWriterRepository
 )
-from leaf_flow.infrastructure.db.repositories.support_topic import SupportTopicRepository
+from leaf_flow.infrastructure.db.repositories.support_topic import (
+    SupportTopicReaderRepository, SupportTopicWriterRepository
+)
 from leaf_flow.infrastructure.db.repositories.review import ExternalReviewReaderRepository
 from leaf_flow.application.ports.product import ProductsReader
 from leaf_flow.application.ports.cart import CartWriter, CartReader
@@ -18,6 +20,7 @@ from leaf_flow.application.ports.category import CategoryReader
 from leaf_flow.application.ports.review import ExternalReviewReader
 from leaf_flow.application.ports.auth import RefreshTokenReader, RefreshTokenWriter
 from leaf_flow.application.ports.user import UserReader, UserWriter
+from leaf_flow.application.ports.support_topic import SupportTopicReader, SupportTopicWriter
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -35,7 +38,8 @@ class UoW:
     orders_reader: OrderReader
     refresh_tokens_reader: RefreshTokenReader
     refresh_tokens_writer: RefreshTokenWriter
-    support_topics: SupportTopicRepository
+    support_topics_reader: SupportTopicReader
+    support_topics_writer: SupportTopicWriter
     external_reviews_reader: ExternalReviewReader
     async def flush(self): await self.session.flush()
     async def commit(self): await self.session.commit()
@@ -56,6 +60,7 @@ async def get_uow():
             orders_reader=OrderReaderRepository(s),
             refresh_tokens_reader=RefreshTokenReaderRepository(s),
             refresh_tokens_writer=RefreshTokenWriterRepository(s),
-            support_topics=SupportTopicRepository(s),
+            support_topics_reader=SupportTopicReaderRepository(s),
+            support_topics_writer=SupportTopicWriterRepository(s),
             external_reviews_reader=ExternalReviewReaderRepository(s)
         )
