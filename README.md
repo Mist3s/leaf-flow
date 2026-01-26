@@ -1,12 +1,12 @@
 # 🍃 LeafFlow
 
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.118-009688.svg)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.118.3-009688.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-316192.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D.svg)](https://redis.io/)
 [![License](https://img.shields.io/badge/license-Proprietary-gray.svg)](LICENSE)
 
-**LeafFlow** — бэкенд для чайного интернет-магазина, построенный на FastAPI с использованием принципов чистой архитектуры (Clean Architecture) и Domain-Driven Design.  
+**LeafFlow** — бэкенд для чайного интернет-магазина, построенный на FastAPI с использованием принципов **Hexagonal Architecture (Ports & Adapters)** и **Domain-Driven Design**.  
 Полнофункциональное решение «от листа до корзины» с интеграцией Telegram, системой заказов и гибким каталогом продуктов.
 
 ---
@@ -41,9 +41,10 @@
 
 ### Ядро
 - 🚀 **Асинхронная архитектура** — полностью `async/await` с FastAPI и SQLAlchemy 2.0
-- 🏗️ **Чистая архитектура** — разделение на слои `domain`, `infrastructure`, `services` и `api`
+- 🏗️ **Hexagonal Architecture** — Ports & Adapters с использованием `typing.Protocol`
 - 🔄 **Unit of Work паттерн** — управление транзакциями и консистентностью данных
-- 📦 **Repository паттерн** — абстракция доступа к данным с типизацией
+- 📦 **CQRS-lite** — разделение Reader/Writer интерфейсов для репозиториев
+- 🎯 **Dependency Inversion** — бизнес-логика зависит только от абстракций (протоколов)
 
 ### Каталог и продукты
 - 🍵 **Гибкая система продуктов** — категории, теги, варианты (вес/цена), профили заваривания
@@ -54,7 +55,7 @@
 - 📱 **Telegram Mini App** — авторизация через initData
 - 🔐 **Telegram Login Widget** — авторизация через виджет на сайте
 - 📧 **Email/Password** — классическая регистрация и вход
-- 🔗 **Связывание аккаунтов** — объединение Telegram и Email-аккаунтов
+- 🔗 **Связывание аккаунтов** — объединение Telegram и Email-аккаунтов с переносом заказов
 - 🎫 **JWT токены** — access + refresh токены с ротацией
 
 ### E-commerce
@@ -74,7 +75,7 @@
 
 | Категория          | Технологии                          |
 |--------------------|-------------------------------------|
-| **Framework**      | FastAPI 0.118                       |
+| **Framework**      | FastAPI 0.118.3                     |
 | **Language**       | Python 3.12+                        |
 | **Database**       | PostgreSQL 17 + asyncpg             |
 | **ORM**            | SQLAlchemy 2.0 (async)              |
@@ -91,7 +92,7 @@
 
 ## 🏛 Архитектура
 
-Проект следует принципам **Clean Architecture** и **Domain-Driven Design**.
+Проект следует принципам **Hexagonal Architecture (Ports & Adapters)** и **Domain-Driven Design**.
 
 ```mermaid
 graph TB
@@ -101,7 +102,7 @@ graph TB
         A2[Catalog Routes] --> B
         A3[Cart Routes] --> B
         A4[Orders Routes] --> B
-        A5[Admin Routes] --> B
+        A5[Internal Routes] --> B
     end
 
     subgraph "Service Layer"
@@ -109,8 +110,13 @@ graph TB
         C2[Catalog Service]
         C3[Cart Service]
         C4[Order Service]
-        C5[Notification Service]
-        C6[Admin Product Service]
+        C5[Review Service]
+    end
+
+    subgraph "Application Layer"
+        P1[Ports / Protocols]
+        P2[DTOs]
+        P3[Auth Exceptions]
     end
 
     subgraph "Infrastructure Layer"
@@ -119,35 +125,70 @@ graph TB
         G[Database Session]
         H[Redis Client]
         I[Celery Client]
+        T[Telegram Parser]
     end
 
     subgraph "Domain Layer"
         J[Entities]
         K[Mappers]
-        L[External Interfaces]
     end
 
     B --> C1
     B --> C2
     B --> C3
     B --> C4
-    C1 --> D
-    C2 --> D
-    C3 --> D
-    C4 --> D
-    C5 --> I
+    C1 --> P1
+    C2 --> P1
+    C3 --> P1
+    C4 --> P1
+    P1 -.-> E
     E --> G
     F --> G
+    C4 --> I
 ```
 
 ### Слои приложения
 
-| Слой               | Назначение                              | Компоненты                                   |
-|--------------------|-----------------------------------------|----------------------------------------------|
-| **API**            | HTTP endpoints, роутинг, валидация      | `auth`, `catalog`, `cart`, `orders`, `admin` |
-| **Services**       | Бизнес-логика приложения                | 10 сервисов для разных доменов               |
-| **Infrastructure** | Работа с БД, Redis, внешние интеграции  | UoW, Repositories, Celery                    |
-| **Domain**         | Доменные сущности, маппинг, интерфейсы  | Entities, Mappers, Externals                 |
+| Слой               | Назначение                                        | Компоненты                                             |
+|--------------------|---------------------------------------------------|--------------------------------------------------------|
+| **API**            | HTTP endpoints, роутинг, валидация                | `auth`, `app`, `internal` роутеры и схемы              |
+| **Services**       | Бизнес-логика приложения                          | `auth_service`, `cart_service`, `order_service`, ...   |
+| **Application**    | Порты (интерфейсы), DTO, исключения               | `ports/`, `dto/`, `auth/exceptions.py`                 |
+| **Infrastructure** | Реализация портов, БД, Redis, внешние интеграции  | UoW, Repositories, Celery, Telegram parser             |
+| **Domain**         | Доменные сущности, маппинг ORM → Entity           | `entities/`, `mappers/`                                |
+
+### Ports & Adapters
+
+Ключевая особенность архитектуры — использование `typing.Protocol` для определения интерфейсов (портов):
+
+```python
+# application/ports/user.py
+from typing import Protocol
+
+class UserReader(Protocol):
+    async def get_by_id(self, user_id: int) -> UserEntity | None: ...
+    async def get_by_email(self, email: str) -> UserEntity | None: ...
+
+class UserWriter(Protocol):
+    async def create(self, **kwargs) -> UserEntity: ...
+    async def delete(self, user_id: int) -> None: ...
+```
+
+```python
+# infrastructure/db/uow.py
+@dataclass
+class UoW:
+    users_reader: UserReader      # ← Protocol, не конкретный класс
+    users_writer: UserWriter
+    orders_reader: OrderReader
+    orders_writer: OrderWriter
+    # ...
+```
+
+Это обеспечивает:
+- **Dependency Inversion** — сервисы зависят от абстракций
+- **Тестируемость** — легко подменять реализации моками
+- **Гибкость** — можно менять инфраструктуру без изменения бизнес-логики
 
 ---
 
@@ -402,62 +443,78 @@ leaf-flow/
     ├── config.py             # Настройки приложения
     │
     ├── api/                  # API слой
-    │   ├── deps.py           # Общие зависимости
+    │   ├── deps.py           # Общие зависимости (get_current_user, uow_dep)
     │   └── v1/
-    │       ├── admin/        # Административные endpoints
-    │       │   ├── routers/
-    │       │   └── schemas/
     │       ├── app/          # Основные endpoints
     │       │   ├── routers/
     │       │   │   ├── cart.py
     │       │   │   ├── catalog.py
-    │       │   │   ├── orders.py
-    │       │   │   └── reviews.py
+    │       │   │   ├── order.py
+    │       │   │   └── review.py
     │       │   └── schemas/
     │       ├── auth/         # Аутентификация
     │       │   ├── routers/
+    │       │   │   ├── auth.py      # Email/Password auth
+    │       │   │   └── telegram.py  # Telegram auth
     │       │   └── schemas/
-    │       └── internal/     # Internal API
+    │       └── internal/     # Internal API (для ботов)
     │           ├── routers/
     │           └── schemas/
     │
+    ├── application/          # Application слой (Ports & DTOs)
+    │   ├── auth/
+    │   │   └── exceptions.py # InvalidInitData, InvalidWidgetData
+    │   ├── dto/
+    │   │   ├── auth.py       # AuthTokens
+    │   │   ├── notification.py
+    │   │   └── telegram.py   # TelegramUserData
+    │   └── ports/            # Интерфейсы (Protocols)
+    │       ├── auth.py       # RefreshTokenReader/Writer
+    │       ├── cart.py       # CartReader/Writer
+    │       ├── category.py   # CategoryReader
+    │       ├── order.py      # OrderReader/Writer
+    │       ├── product.py    # ProductsReader
+    │       ├── review.py     # ExternalReviewReader
+    │       ├── support_topic.py
+    │       └── user.py       # UserReader/Writer
+    │
     ├── domain/               # Доменный слой
-    │   ├── entities/         # Доменные сущности
-    │   │   ├── cart.py
-    │   │   ├── category.py
-    │   │   ├── order.py
-    │   │   ├── product.py
-    │   │   ├── reviews.py
-    │   │   └── user.py
-    │   ├── mappers.py        # Маппинг Model ↔ Entity
-    │   └── externals/        # Интерфейсы внешних сервисов
+    │   └── entities/         # Доменные сущности (dataclasses)
+    │       ├── auth.py
+    │       ├── cart.py
+    │       ├── category.py
+    │       ├── order.py
+    │       ├── product.py
+    │       ├── review.py
+    │       ├── support_topic.py
+    │       └── user.py
     │
     ├── infrastructure/       # Инфраструктурный слой
     │   ├── db/
     │   │   ├── base.py       # Базовый класс моделей
     │   │   ├── session.py    # Настройка сессии БД
-    │   │   ├── uow.py        # Unit of Work
+    │   │   ├── uow.py        # Unit of Work (типизирован протоколами)
+    │   │   ├── mappers/      # ORM Model → Domain Entity
     │   │   ├── models/       # SQLAlchemy модели
-    │   │   │   ├── carts.py
-    │   │   │   ├── orders.py
-    │   │   │   ├── products.py
-    │   │   │   ├── reviews.py
-    │   │   │   ├── support_topics.py
-    │   │   │   ├── tokens.py
-    │   │   │   └── users.py
-    │   │   └── repositories/ # Репозитории
+    │   │   └── repositories/ # Реализации портов
+    │   │       ├── cart.py   # CartReaderRepository, CartWriterRepository
+    │   │       ├── order.py  # OrderReaderRepository, OrderWriterRepository
+    │   │       ├── user.py   # UserReaderRepository, UserWriterRepository
+    │   │       └── ...
     │   └── externals/
-    │       └── celery_client.py
+    │       ├── celery/
+    │       │   ├── celery_client.py
+    │       │   └── notification.py
+    │       └── telegram/
+    │           └── parser.py # parse_telegram_init_data, parse_telegram_widget_data
     │
-    └── services/             # Сервисный слой
-        ├── admin_product_service.py
+    └── services/             # Сервисный слой (бизнес-логика)
         ├── auth_service.py
         ├── cart_service.py
         ├── catalog_service.py
-        ├── media_service.py
         ├── order_service.py
         ├── review_service.py
-        ├── security.py
+        ├── security.py       # JWT, bcrypt, Telegram HMAC
         └── support_topic_service.py
 ```
 
@@ -514,38 +571,78 @@ leaf-flow/
 ```python
 from leaf_flow.api.v1.app.routers.your_router import router as your_router
 
-app.include_router(
-    your_router,
-    prefix="/v1/your-resource",
-    tags=["your-tag"],
-)
+api_v1.include_router(your_router)
 ```
 
-### Работа с моделями
+### Добавление нового репозитория
 
-1. Создайте модель в `infrastructure/db/models/`
-2. Создайте репозиторий в `infrastructure/db/repositories/`
-3. Добавьте репозиторий в `UoW` (`infrastructure/db/uow.py`)
-4. Импортируйте модель в `migrations/env.py`
-5. Создайте миграцию:
+1. **Создайте Protocol** в `application/ports/`:
+
+```python
+# application/ports/your_entity.py
+from typing import Protocol
+from leaf_flow.domain.entities.your_entity import YourEntity
+
+class YourEntityReader(Protocol):
+    async def get_by_id(self, id: int) -> YourEntity | None: ...
+
+class YourEntityWriter(Protocol):
+    async def create(self, **kwargs) -> YourEntity: ...
+```
+
+2. **Создайте модель** в `infrastructure/db/models/`
+
+3. **Создайте репозиторий** в `infrastructure/db/repositories/`:
+
+```python
+# infrastructure/db/repositories/your_entity.py
+class YourEntityReaderRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_by_id(self, id: int) -> YourEntity | None:
+        # ...реализация
+```
+
+4. **Добавьте в UoW** (`infrastructure/db/uow.py`):
+
+```python
+@dataclass
+class UoW:
+    # ...existing fields...
+    your_entities_reader: YourEntityReader  # ← Protocol!
+    your_entities_writer: YourEntityWriter
+```
+
+5. **Обновите фабрику** `get_uow()`:
+
+```python
+async def get_uow():
+    async with AsyncSessionLocal() as s:
+        yield UoW(
+            # ...
+            your_entities_reader=YourEntityReaderRepository(s),
+            your_entities_writer=YourEntityWriterRepository(s),
+        )
+```
+
+6. **Создайте миграцию**:
 
 ```bash
-alembic revision --autogenerate -m "add your_model table"
+alembic revision --autogenerate -m "add your_entity table"
 alembic upgrade head
 ```
 
 ### Добавление сервиса
 
-1. Создайте файл в `services/`
-2. Используйте `UoW` для работы с данными
-3. Реализуйте бизнес-логику
+Сервисы работают только с протоколами через UoW:
 
 ```python
 from leaf_flow.infrastructure.db.uow import UoW
 
 async def your_service_function(data: SomeDTO, uow: UoW) -> ResultDTO:
-    # Бизнес-логика
-    entity = await uow.your_repo.get(id)
+    # Бизнес-логика — работаем через протоколы
+    entity = await uow.your_entities_reader.get_by_id(id)
     # ...
     await uow.commit()
     return result
@@ -555,14 +652,23 @@ async def your_service_function(data: SomeDTO, uow: UoW) -> ResultDTO:
 
 ## 📝 Best Practices
 
+### Архитектура
+- ✅ Всегда определяйте **Protocol** перед реализацией репозитория
+- ✅ UoW должен быть типизирован **протоколами**, не конкретными классами
+- ✅ Разделяйте **Reader** и **Writer** интерфейсы (CQRS-lite)
+- ✅ Сервисы зависят только от **абстракций** (Dependency Inversion)
+
+### Код
 - ✅ Всегда используйте `async/await` для I/O операций
-- ✅ Работайте с БД через паттерн **Unit of Work**
 - ✅ Используйте Pydantic-схемы для валидации входящих/исходящих данных
-- ✅ Следуйте принципу разделения слоёв (API / Services / Infrastructure / Domain)
+- ✅ Следуйте принципу разделения слоёв (API / Services / Application / Infrastructure / Domain)
 - ✅ Используйте маппинг между моделями БД и доменными сущностями
 - ✅ Избегайте прямой работы с ORM из слоя API — используйте сервисы
+
+### Инфраструктура
 - ✅ Для фоновых задач используйте Celery через `celery_client`
 - ✅ Храните секреты в переменных окружения, не в коде
+- ✅ Используйте кастомные исключения (`InvalidInitData`, `InvalidWidgetData`)
 
 ---
 
