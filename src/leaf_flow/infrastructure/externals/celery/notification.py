@@ -1,14 +1,14 @@
 from leaf_flow.domain.entities.order import OrderEntity
-from leaf_flow.domain.events.notification import NotificationsOrderEntity, OrderStatus
+from leaf_flow.domain.entities.user import UserEntity
+from leaf_flow.application.dto.notification import NotificationsOrderEntity, OrderStatus
 from leaf_flow.infrastructure.db.models import (
-    SupportTopic as SupportTopicModel,
-    User as UserModel
+    SupportTopic as SupportTopicModel
 )
 
 
 def map_notifications_order_to_entity(
     order: OrderEntity,
-    user: UserModel,
+    user: UserEntity,
     old_status: OrderStatus,
     status_comment: str | None = None,
     support_topic: SupportTopicModel = None,

@@ -27,23 +27,44 @@ def get_celery():
 
 
 async def get_current_user(
-    authorization: Annotated[Optional[str], Header(alias="Authorization")] = None,
+    authorization: Annotated[Optional[str],
+    Header(alias="Authorization")] = None,
     uow: UoW = Depends(uow_dep),
 ) -> UserEntity:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+
     token = authorization.split(" ", 1)[1]
+
     try:
         payload = decode_access_token(token)
+
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+
     user_id = int(payload.get("sub"))
+
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
-    user = await uow.users.get(int(user_id))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    user = await uow.users_reader.get_by_id(int(user_id))
+
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    return map_user_model_to_entity(user)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+
+    return user
 
 
 async def require_internal_auth(

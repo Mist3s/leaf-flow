@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 
 class AuthTokens(BaseModel):
@@ -12,13 +12,20 @@ class AuthTokens(BaseModel):
 
 class UserProfile(BaseModel):
     id: str
-    telegramId: int | None = None
-    email: str | None = None
-    firstName: str
-    lastName: str | None = None
-    username: str | None = None
-    languageCode: str | None = None
-    photoUrl: str | None = None
+    telegramId: int | None = Field(validation_alias="telegram_id")
+    email: str | None
+    firstName: str = Field(validation_alias="first_name")
+    lastName: str | None = Field(validation_alias="last_name")
+    username: str | None
+    languageCode: str | None = Field(validation_alias="language_code")
+    photoUrl: str | None = Field(validation_alias="photo_url")
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        # TODO: В модели id: int, схеме ответа id: str
+        coerce_numbers_to_str=True
+    )
 
 
 class RegisterRequest(BaseModel):

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.order import OrderWriter, OrderReader
-from leaf_flow.infrastructure.db.repositories.user import UserRepository
+from leaf_flow.infrastructure.db.repositories.user import UserReaderRepository, UserWriterRepository
 from leaf_flow.infrastructure.db.repositories.product import ProductRepository
 from leaf_flow.infrastructure.db.repositories.category import CategoryReaderRepository
 from leaf_flow.infrastructure.db.repositories.cart import CartWriterRepository, CartReaderRepository
@@ -17,6 +17,7 @@ from leaf_flow.application.ports.cart import CartWriter, CartReader
 from leaf_flow.application.ports.category import CategoryReader
 from leaf_flow.application.ports.review import ExternalReviewReader
 from leaf_flow.application.ports.auth import RefreshTokenReader, RefreshTokenWriter
+from leaf_flow.application.ports.user import UserReader, UserWriter
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -24,7 +25,8 @@ from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 @dataclass
 class UoW:
     session: AsyncSession
-    users: UserRepository
+    users_reader: UserReader
+    users_writer: UserWriter
     products: ProductsReader
     categories_reader: CategoryReader
     carts_writer: CartWriter
@@ -44,7 +46,8 @@ async def get_uow():
     async with AsyncSessionLocal() as s:
         yield UoW(
             session=s,
-            users=UserRepository(s),
+            users_reader=UserReaderRepository(s),
+            users_writer=UserWriterRepository(s),
             products=ProductRepository(s),
             categories_reader=CategoryReaderRepository(s),
             carts_writer=CartWriterRepository(s),

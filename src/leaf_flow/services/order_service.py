@@ -8,7 +8,7 @@ from celery import Celery
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity, DeliveryMethod, OrderStatus
-from leaf_flow.infrastructure.db.mappers.notification import map_notifications_order_to_entity
+from leaf_flow.infrastructure.externals.celery.notification import map_notifications_order_to_entity
 
 LETTERS = string.ascii_uppercase
 DIGITS = string.digits
@@ -81,7 +81,7 @@ async def create_order(
         raise ValueError("ORDER_NOT_FOUND")
     
     # Отправляем уведомление о создании заказа
-    user = await uow.users.get(user_id)
+    user = await uow.users_reader.get_by_id(user_id)
     support_topic = await uow.support_topics.get_by_user_telegram_id(
         user.telegram_id
     ) if user.telegram_id else None
@@ -168,7 +168,7 @@ async def update_order_status(
     )
     await uow.commit()
 
-    user = await uow.users.get(order.user_id)
+    user = await uow.users_reader.get_by_id(order.user_id)
     support_topic = await uow.support_topics.get_by_user_telegram_id(
         user.telegram_id
     ) if user.telegram_id else None

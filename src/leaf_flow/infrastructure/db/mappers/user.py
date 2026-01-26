@@ -12,4 +12,5 @@ def map_user_model_to_entity(user: UserModel) -> UserEntity:
         username=user.username,
         language_code=user.language_code,
         photo_url=user.photo_url,
+        password_hash=user.password_hash
     )

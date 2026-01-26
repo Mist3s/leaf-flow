@@ -3,7 +3,6 @@ from datetime import timedelta
 from leaf_flow.application.auth.exceptions import InvalidInitData, InvalidWidgetData
 from leaf_flow.application.dto.auth import AuthTokens
 from leaf_flow.config import settings
-from leaf_flow.infrastructure.db.models.user import User
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.infrastructure.externals.telegram.parser import (
     parse_telegram_init_data, parse_telegram_widget_data
@@ -18,7 +17,6 @@ from leaf_flow.services.security import (
     _utcnow
 )
 from leaf_flow.domain.entities.user import UserEntity
-from leaf_flow.infrastructure.db.mappers.user import map_user_model_to_entity
 
 
 async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthTokens, UserEntity]:
@@ -29,27 +27,26 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
         raise InvalidInitData("INVALID_INIT_DATA")
 
     telegram_user = parse_telegram_init_data(init_data)
-    user = await uow.users.get_by_telegram_id(telegram_user.telegram_id)
+    user = await uow.users_reader.get_by_telegram_id(telegram_user.telegram_id)
 
     if user is None:
-        user = User(
+        user = await uow.users_writer.create(
             telegram_id=telegram_user.telegram_id,
             first_name=telegram_user.first_name,
             last_name=telegram_user.last_name,
             username=telegram_user.username,
             language_code=telegram_user.language_code,
-            photo_url=telegram_user.photo_url,
+            photo_url=telegram_user.photo_url
         )
-        await uow.users.add(user)
-        await uow.flush()
     else:
         # Обновляем данные существующего пользователя
-        user.first_name = telegram_user.first_name
-        user.last_name = telegram_user.last_name
-        user.username = telegram_user.username
-        user.language_code = telegram_user.language_code
-        user.photo_url = telegram_user.photo_url
-        await uow.flush()
+        user = await uow.users_writer.update_fields(
+            user_id=user.id,
+            username=telegram_user.username,
+            photo_url=telegram_user.photo_url,
+            first_name=telegram_user.first_name,
+            last_name=telegram_user.last_name
+        )
 
     # Генерируем токены
     access_token, access_ttl = create_access_token(user.id)
@@ -68,7 +65,7 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
         expires_in=access_ttl,
         refresh_expires_in=refresh_expires_in,
     )
-    return tokens, map_user_model_to_entity(user)
+    return tokens, user
 
 
 async def exchange_login_widget_for_tokens(
@@ -99,25 +96,25 @@ async def exchange_login_widget_for_tokens(
         raise InvalidWidgetData("INVALID_LOGIN_WIDGET_DATA")
 
     telegram_user = parse_telegram_widget_data(widget_data)
-    user = await uow.users.get_by_telegram_id(telegram_user.telegram_id)
+    user = await uow.users_reader.get_by_telegram_id(telegram_user.telegram_id)
     
     if user is None:
-        user = User(
+        user = await uow.users_writer.create(
             telegram_id=telegram_user.telegram_id,
             first_name=telegram_user.first_name,
             last_name=telegram_user.last_name,
             username=telegram_user.username,
-            photo_url=telegram_user.photo_url,
+            photo_url=telegram_user.photo_url
         )
-        await uow.users.add(user)
-        await uow.flush()
     else:
         # Обновляем данные существующего пользователя
-        user.first_name = telegram_user.first_name
-        user.last_name = telegram_user.last_name
-        user.username = telegram_user.username
-        user.photo_url = telegram_user.photo_url
-        await uow.flush()
+        user = await uow.users_writer.update_fields(
+            user_id=user.id,
+            username=telegram_user.username,
+            photo_url=telegram_user.photo_url,
+            first_name=telegram_user.first_name,
+            last_name=telegram_user.last_name
+        )
     
     # Генерируем токены
     access_token, access_ttl = create_access_token(user.id)
@@ -136,7 +133,7 @@ async def exchange_login_widget_for_tokens(
         expires_in=access_ttl,
         refresh_expires_in=refresh_expires_in,
     )
-    return tokens, map_user_model_to_entity(user)
+    return tokens, user
 
 
 async def register_user_from_bot(
@@ -154,31 +151,30 @@ async def register_user_from_bot(
     Токены не генерируются.
     """
     # Проверяем, существует ли пользователь
-    user = await uow.users.get_by_telegram_id(telegram_id)
+    user = await uow.users_reader.get_by_telegram_id(telegram_id)
     
     if user is None:
         # Создаем нового пользователя
-        user = User(
+        user = await uow.users_writer.create(
             telegram_id=telegram_id,
             first_name=first_name,
             last_name=last_name,
             username=username,
             language_code=language_code,
-            photo_url=photo_url,
+            photo_url=photo_url
         )
-        await uow.users.add(user)
-        await uow.flush()
     else:
         # Обновляем данные существующего пользователя
-        user.first_name = first_name
-        user.last_name = last_name
-        user.username = username
-        user.language_code = language_code
-        user.photo_url = photo_url
-        await uow.flush()
+        user = await uow.users_writer.update_fields(
+            user_id=user.id,
+            username=username,
+            photo_url=photo_url,
+            first_name=first_name,
+            last_name=last_name
+        )
     
     await uow.commit()
-    return map_user_model_to_entity(user)
+    return user
 
 
 async def register_email_user(
@@ -206,7 +202,7 @@ async def register_email_user(
     """
     
     # Проверка уникальности email
-    existing_user = await uow.users.get_by_email(email)
+    existing_user = await uow.users_reader.get_by_email(email)
 
     if existing_user:
         raise ValueError("EMAIL_ALREADY_EXISTS")
@@ -215,14 +211,12 @@ async def register_email_user(
     password_hash = hash_password(password)
     
     # Создание пользователя
-    user = User(
+    user = await uow.users_writer.create(
         email=email,
         password_hash=password_hash,
         first_name=first_name,
         last_name=last_name,
-        telegram_id=None,  # Email-пользователь без Telegram
     )
-    await uow.users.add(user)
     await uow.flush()
     
     # Генерация токенов (та же логика, что и для Telegram)
@@ -242,7 +236,7 @@ async def register_email_user(
         expires_in=access_ttl,
         refresh_expires_in=refresh_expires_in,
     )
-    return tokens, map_user_model_to_entity(user)
+    return tokens, user
 
 
 async def authenticate_email_user(
@@ -264,7 +258,7 @@ async def authenticate_email_user(
     Raises:
         ValueError: Если email или пароль неверны
     """
-    user = await uow.users.get_by_email(email)
+    user = await uow.users_reader.get_by_email(email)
 
     if not user or not user.password_hash:
         raise ValueError("INVALID_CREDENTIALS")
@@ -289,7 +283,7 @@ async def authenticate_email_user(
         expires_in=access_ttl,
         refresh_expires_in=refresh_expires_in,
     )
-    return tokens, map_user_model_to_entity(user)
+    return tokens, user
 
 
 async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
@@ -353,7 +347,7 @@ async def link_telegram_to_user(
     telegram_user = parse_telegram_widget_data(widget_data)
     
     # Получаем текущего пользователя
-    current_user = await uow.users.get(current_user_id)
+    current_user = await uow.users_reader.get_by_id(current_user_id)
 
     if not current_user:
         raise ValueError("USER_NOT_FOUND")
@@ -363,7 +357,9 @@ async def link_telegram_to_user(
         raise ValueError("TELEGRAM_ALREADY_LINKED")
     
     # Проверяем, не занят ли этот telegram_id другим аккаунтом
-    existing_tg_user = await uow.users.get_by_telegram_id(telegram_user.telegram_id)
+    existing_tg_user = await uow.users_reader.get_by_telegram_id(
+        telegram_user.telegram_id
+    )
     
     if existing_tg_user:
         if existing_tg_user.id == current_user_id:
@@ -372,19 +368,15 @@ async def link_telegram_to_user(
         raise ValueError("TELEGRAM_LINKED_TO_ANOTHER_ACCOUNT")
     
     # Привязываем Telegram к текущему пользователю
-    current_user.telegram_id = telegram_user.telegram_id
-    current_user.username = telegram_user.username
-    current_user.photo_url = telegram_user.photo_url
 
-    # Обновляем имя только если у пользователя оно не задано или пустое
-    if not current_user.first_name:
-        current_user.first_name = telegram_user.first_name
-
-    if not current_user.last_name and telegram_user.last_name:
-        current_user.last_name = telegram_user.last_name
-    
+    user_up = await uow.users_writer.update_fields(
+        user_id=current_user_id,
+        telegram_id=telegram_user.telegram_id,
+        username=telegram_user.username,
+        photo_url=telegram_user.photo_url
+    )
     await uow.commit()
-    return map_user_model_to_entity(current_user)
+    return user_up
 
 
 async def merge_telegram_account(
@@ -415,15 +407,11 @@ async def merge_telegram_account(
     # Валидация подписи и auth_date
     if not verify_telegram_login_widget(widget_data, settings.TELEGRAM_BOT_TOKEN):
         raise ValueError("INVALID_LOGIN_WIDGET_DATA")
-    
-    telegram_id = widget_data["id"]
-    first_name = widget_data["first_name"]
-    last_name = widget_data.get("last_name")
-    username = widget_data.get("username")
-    photo_url = widget_data.get("photo_url")
+
+    telegram_user = parse_telegram_widget_data(widget_data)
     
     # Получаем текущего пользователя
-    current_user = await uow.users.get(current_user_id)
+    current_user = await uow.users_reader.get_by_id(current_user_id)
     if not current_user:
         raise ValueError("USER_NOT_FOUND")
     
@@ -432,19 +420,20 @@ async def merge_telegram_account(
         raise ValueError("TELEGRAM_ALREADY_LINKED")
     
     # Проверяем, существует ли аккаунт с этим telegram_id
-    existing_tg_user = await uow.users.get_by_telegram_id(telegram_id)
+    existing_tg_user = await uow.users_reader.get_by_telegram_id(
+        telegram_user.telegram_id
+    )
     
     if not existing_tg_user:
         # Нет аккаунта для слияния — просто привязываем
-        current_user.telegram_id = telegram_id
-        current_user.username = username
-        current_user.photo_url = photo_url
-        if not current_user.first_name:
-            current_user.first_name = first_name
-        if not current_user.last_name and last_name:
-            current_user.last_name = last_name
+        await uow.users_writer.update_fields(
+            user_id=current_user_id,
+            telegram_id=telegram_user.telegram_id,
+            username=telegram_user.username,
+            photo_url=telegram_user.photo_url
+        )
         await uow.commit()
-        return map_user_model_to_entity(current_user)
+        return current_user
     
     if existing_tg_user.id == current_user_id:
         raise ValueError("TELEGRAM_ALREADY_LINKED")
@@ -456,31 +445,27 @@ async def merge_telegram_account(
         to_user_id=current_user_id
     )
     
-    # 2. Очищаем корзину старого пользователя (удаляем её)
-    await uow.carts_writer.delete_by_user_id(existing_tg_user.id)
-    
-    # 3. Отзываем все refresh токены старого пользователя
-    await uow.refresh_tokens_writer.revoke_all_for_user(
-        existing_tg_user.id,
-        _utcnow()
-    )
+    # # 2. Очищаем корзину старого пользователя (удаляем её)
+    # await uow.carts_writer.delete_by_user_id(existing_tg_user.id)
+    #
+    # # 3. Отзываем все refresh токены старого пользователя
+    # await uow.refresh_tokens_writer.revoke_all_for_user(
+    #     existing_tg_user.id,
+    #     _utcnow()
+    # )
     
     # 4. Удаляем старого пользователя и сразу применяем изменения,
     #    чтобы освободить telegram_id до UPDATE
-    await uow.users.delete(existing_tg_user)
-    await uow.flush()
-    
-    # 5. Привязываем Telegram к текущему пользователю
-    current_user.telegram_id = telegram_id
-    current_user.username = username
-    current_user.photo_url = photo_url
-    if not current_user.first_name:
-        current_user.first_name = first_name
-    if not current_user.last_name and last_name:
-        current_user.last_name = last_name
-    
+    await uow.users_writer.delete(existing_tg_user.id)
+
+    user_up = await uow.users_writer.update_fields(
+        user_id=current_user_id,
+        telegram_id=telegram_user.telegram_id,
+        username=telegram_user.username,
+        photo_url=telegram_user.photo_url
+    )
     await uow.commit()
-    return map_user_model_to_entity(current_user)
+    return user_up
 
 
 async def unlink_telegram_from_user(
@@ -503,7 +488,7 @@ async def unlink_telegram_from_user(
     Raises:
         ValueError: Если у пользователя нет Telegram или нет email/пароля
     """
-    current_user = await uow.users.get(current_user_id)
+    current_user = await uow.users_reader.get_by_id(current_user_id)
     if not current_user:
         raise ValueError("USER_NOT_FOUND")
     
@@ -514,14 +499,15 @@ async def unlink_telegram_from_user(
     # Проверяем, есть ли альтернативный способ входа (email + пароль)
     if not current_user.email or not current_user.password_hash:
         raise ValueError("CANNOT_UNLINK_NO_EMAIL_PASSWORD")
-    
-    # Отвязываем Telegram
-    current_user.telegram_id = None
-    current_user.username = None  # username связан с Telegram
-    current_user.photo_url = None  # фото тоже из Telegram
-    
+
+    user_up = await uow.users_writer.update_fields(
+        user_id=current_user_id,
+        telegram_id=None,
+        username=None,
+        photo_url=None
+    )
     await uow.commit()
-    return map_user_model_to_entity(current_user)
+    return user_up
 
 
 async def update_user_profile(
@@ -547,28 +533,36 @@ async def update_user_profile(
     Raises:
         ValueError: Если пользователь не найден или email уже занят
     """
-    current_user = await uow.users.get(current_user_id)
+    current_user = await uow.users_reader.get_by_id(current_user_id)
     if not current_user:
         raise ValueError("USER_NOT_FOUND")
-    
+
+    update_fields = {}
+
     # Обновляем имя
     if first_name is not None:
-        current_user.first_name = first_name
+        update_fields['first_name'] = first_name
     
     # Обновляем фамилию
     if last_name is not None:
-        current_user.last_name = last_name
+        update_fields['last_name'] = last_name
     
     # Обновляем email
     if email is not None and email != current_user.email:
         # Проверяем, не занят ли email другим пользователем
-        existing_user = await uow.users.get_by_email(email)
+        existing_user = await uow.users_reader.get_by_email(email)
+
         if existing_user and existing_user.id != current_user_id:
             raise ValueError("EMAIL_ALREADY_EXISTS")
-        current_user.email = email
-    
+
+        update_fields['email'] = email
+
+    user_up = await uow.users_writer.update_fields(
+        user_id=current_user_id,
+        **update_fields
+    )
     await uow.commit()
-    return map_user_model_to_entity(current_user)
+    return user_up
 
 
 async def change_user_password(
@@ -595,7 +589,7 @@ async def change_user_password(
     Raises:
         ValueError: Если текущий пароль неверен или пользователь не найден
     """
-    current_user = await uow.users.get(current_user_id)
+    current_user = await uow.users_reader.get_by_id(current_user_id)
     if not current_user:
         raise ValueError("USER_NOT_FOUND")
     
@@ -607,10 +601,12 @@ async def change_user_password(
             raise ValueError("INVALID_CURRENT_PASSWORD")
     
     # Устанавливаем новый пароль
-    current_user.password_hash = hash_password(new_password)
-    
+    user_up = await uow.users_writer.update_fields(
+        user_id=current_user_id,
+        password_hash=hash_password(new_password)
+    )
     await uow.commit()
-    return map_user_model_to_entity(current_user)
+    return user_up
 
 
 async def set_user_email(
@@ -634,7 +630,7 @@ async def set_user_email(
     Raises:
         ValueError: Если email уже есть, занят другим пользователем, или пользователь не найден
     """
-    current_user = await uow.users.get(current_user_id)
+    current_user = await uow.users_reader.get_by_id(current_user_id)
     if not current_user:
         raise ValueError("USER_NOT_FOUND")
     
@@ -643,13 +639,15 @@ async def set_user_email(
         raise ValueError("EMAIL_ALREADY_SET")
     
     # Проверяем, не занят ли email другим пользователем
-    existing_user = await uow.users.get_by_email(email)
+    existing_user = await uow.users_reader.get_by_email(email)
     if existing_user:
         raise ValueError("EMAIL_ALREADY_EXISTS")
     
     # Устанавливаем email и пароль
-    current_user.email = email
-    current_user.password_hash = hash_password(password)
-    
+    user_up = await uow.users_writer.update_fields(
+        user_id=current_user_id,
+        email=email,
+        password_hash=hash_password(password)
+    )
     await uow.commit()
-    return map_user_model_to_entity(current_user)
+    return user_up

@@ -12,5 +12,4 @@ class UserEntity:
     username: Optional[str] = None
     language_code: Optional[str] = None
     photo_url: Optional[str] = None
-
-
+    password_hash: Optional[str] = None

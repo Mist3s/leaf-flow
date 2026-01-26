@@ -35,8 +35,8 @@ router = APIRouter(prefix="/auth/telegram", tags=["telegram"])
     }
 )
 async def telegram_init(
-        payload: TelegramInitRequest,
-        uow: UoW = Depends(uow_dep)
+    payload: TelegramInitRequest,
+    uow: UoW = Depends(uow_dep)
 ) -> AuthResponse:
     try:
         tokens, user = await exchange_init_data_for_tokens(payload.initData, uow)
@@ -44,16 +44,7 @@ async def telegram_init(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     resp = AuthResponse(
         tokens=AuthTokens.model_validate(tokens, from_attributes=True),
-        user=UserProfile(
-            id=str(user.id),
-            telegramId=user.telegram_id,
-            email=user.email,
-            firstName=user.first_name,
-            lastName=user.last_name,
-            username=user.username,
-            languageCode=user.language_code,
-            photoUrl=user.photo_url
-        )
+        user=UserProfile.model_validate(user, from_attributes=True)
     )
     return resp
 
@@ -64,8 +55,8 @@ async def telegram_init(
     responses={400: {"model": ErrorResponse}}
 )
 async def telegram_login_widget(
-        payload: TelegramLoginWidgetRequest,
-        uow: UoW = Depends(uow_dep)
+    payload: TelegramLoginWidgetRequest,
+    uow: UoW = Depends(uow_dep)
 ) -> AuthResponse:
     """
     Авторизация через Telegram Login Widget.
@@ -83,16 +74,7 @@ async def telegram_login_widget(
 
     return AuthResponse(
         tokens=AuthTokens.model_validate(tokens, from_attributes=True),
-        user=UserProfile(
-            id=str(user.id),
-            telegramId=user.telegram_id,
-            email=user.email,
-            firstName=user.first_name,
-            lastName=user.last_name,
-            username=user.username,
-            languageCode=user.language_code,
-            photoUrl=user.photo_url,
-        ),
+        user=UserProfile.model_validate(user, from_attributes=True),
     )
 
 
@@ -106,9 +88,9 @@ async def telegram_login_widget(
     }
 )
 async def telegram_link(
-        payload: TelegramLoginWidgetRequest,
-        user: UserEntity = Depends(get_current_user),
-        uow: UoW = Depends(uow_dep)
+    payload: TelegramLoginWidgetRequest,
+    user: UserEntity = Depends(get_current_user),
+    uow: UoW = Depends(uow_dep)
 ) -> UserProfile:
     """
     Привязывает Telegram-аккаунт к текущему пользователю.
@@ -132,23 +114,17 @@ async def telegram_link(
         if error_message == "TELEGRAM_LINKED_TO_ANOTHER_ACCOUNT":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Этот Telegram-аккаунт уже привязан к другому пользователю. Используйте /telegram/merge для слияния аккаунтов."
+                detail=(
+                    "Этот Telegram-аккаунт уже привязан к другому пользователю. "
+                    "Используйте /telegram/merge для слияния аккаунтов."
+                )
             )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
 
     except InvalidWidgetData as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    return UserProfile(
-        id=str(updated_user.id),
-        telegramId=updated_user.telegram_id,
-        email=updated_user.email,
-        firstName=updated_user.first_name,
-        lastName=updated_user.last_name,
-        username=updated_user.username,
-        languageCode=updated_user.language_code,
-        photoUrl=updated_user.photo_url,
-    )
+    return UserProfile.model_validate(updated_user, from_attributes=True)
 
 
 @router.post(
@@ -160,9 +136,9 @@ async def telegram_link(
     }
 )
 async def telegram_merge(
-        payload: TelegramLoginWidgetRequest,
-        user: UserEntity = Depends(get_current_user),
-        uow: UoW = Depends(uow_dep)
+    payload: TelegramLoginWidgetRequest,
+    user: UserEntity = Depends(get_current_user),
+    uow: UoW = Depends(uow_dep)
 ) -> UserProfile:
     """
     Выполняет слияние аккаунтов: привязывает Telegram к текущему пользователю,
@@ -190,16 +166,7 @@ async def telegram_merge(
             )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
 
-    return UserProfile(
-        id=str(updated_user.id),
-        telegramId=updated_user.telegram_id,
-        email=updated_user.email,
-        firstName=updated_user.first_name,
-        lastName=updated_user.last_name,
-        username=updated_user.username,
-        languageCode=updated_user.language_code,
-        photoUrl=updated_user.photo_url,
-    )
+    return UserProfile.model_validate(updated_user, from_attributes=True)
 
 
 @router.delete(
@@ -211,8 +178,8 @@ async def telegram_merge(
     }
 )
 async def telegram_unlink(
-        user: UserEntity = Depends(get_current_user),
-        uow: UoW = Depends(uow_dep)
+    user: UserEntity = Depends(get_current_user),
+    uow: UoW = Depends(uow_dep)
 ) -> UserProfile:
     """
     Отвязывает Telegram от аккаунта пользователя.
@@ -238,13 +205,4 @@ async def telegram_unlink(
             )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
 
-    return UserProfile(
-        id=str(updated_user.id),
-        telegramId=updated_user.telegram_id,
-        email=updated_user.email,
-        firstName=updated_user.first_name,
-        lastName=updated_user.last_name,
-        username=updated_user.username,
-        languageCode=updated_user.language_code,
-        photoUrl=updated_user.photo_url,
-    )
+    return UserProfile.model_validate(updated_user, from_attributes=True)

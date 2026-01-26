@@ -15,7 +15,7 @@ async def get_by_telegram_id(
     _: None = Depends(require_internal_auth),
     uow: UoW = Depends(uow_dep),
 ) -> InternalUserPublic:
-    user = await uow.users.get_by_telegram_id(telegram_id)
+    user = await uow.users_reader.get_by_telegram_id(telegram_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

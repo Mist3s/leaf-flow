@@ -22,7 +22,7 @@ async def list_user_orders(
     _: None = Depends(require_internal_auth),
     uow: UoW = Depends(uow_dep),
 ) -> InternalOrderListResponse:
-    user = await uow.users.get_by_telegram_id(telegram_id)
+    user = await uow.users_reader.get_by_telegram_id(telegram_id)
     if not user:
         return InternalOrderListResponse(items=[])
     orders = await order_service.list_orders_for_user(user_id=user.id, limit=limit, offset=offset, uow=uow)
