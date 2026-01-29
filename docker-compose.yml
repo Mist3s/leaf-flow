@@ -77,6 +77,20 @@ services:
       retries: 5
     restart: always
 
+  leaf-flow-outbox-worker-prod:
+    image: mist3s/leaf-flow:prod
+    container_name: leaf-flow-outbox-worker-prod
+    restart: always
+    env_file: .env
+    command: ["python", "-m", "leaf_flow.outbox_worker"]
+    depends_on:
+      - db-leaf-flow
+      - leaf-flow-redis
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
   leaf-flow-notifications-worker:
     image: mist3s/leaf-flow-notifications-worker:prod
     container_name: leaf-flow-notifications-worker

@@ -13,6 +13,7 @@ from leaf_flow.infrastructure.db.models.product import Product, Category, Produc
 from leaf_flow.infrastructure.db.models.order import Order, OrderStatusEnum, DeliveryMethodEnum, OrderItem  # noqa: F401
 from leaf_flow.infrastructure.db.models.cart import Cart, CartItem  # noqa: F401
 from leaf_flow.infrastructure.db.models.review import ExternalReview, PlatformEnum  # noqa: F401
+from leaf_flow.infrastructure.db.models.outbox import OutboxMessage, OutboxEventType  # noqa: F401
 
 config = context.config
 

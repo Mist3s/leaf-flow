@@ -3,16 +3,15 @@ import string
 from decimal import Decimal
 from typing import Iterable, Sequence
 
-from celery import Celery
-
 from leaf_flow.infrastructure.db.uow import UoW
 from leaf_flow.services.cart_service import get_cart, clear_cart
 from leaf_flow.domain.entities.order import OrderEntity, DeliveryMethod, OrderStatus
-from leaf_flow.infrastructure.externals.celery.notification import map_notifications_order_to_entity
+from leaf_flow.domain.events.order import OrderCreatedEvent, OrderStatusChangedEvent
 
 LETTERS = string.ascii_uppercase
 DIGITS = string.digits
 ALPHABET = LETTERS + DIGITS
+
 
 def generate_order_id(length: int = 8) -> str:
     if length < 2:
@@ -50,9 +49,9 @@ async def create_order(
     address: str | None,
     comment: str | None,
     expected_total: Decimal | None,
-    uow: UoW,
-    celery: Celery
+    uow: UoW
 ) -> OrderEntity:
+    """Создание заказа."""
     cart = await get_cart(user_id, uow)
     if not cart.items:
         raise ValueError("CART_EMPTY")
@@ -73,31 +72,19 @@ async def create_order(
     if not order:
         raise ValueError("ORDER_NOT_FOUND")
     
-    # Отправляем уведомление о создании заказа
-    user = await uow.users_reader.get_by_id(user_id)
-    support_topic = await uow.support_topics_reader.get_by_user_telegram_id(
-        user.telegram_id
-    ) if user.telegram_id else None
-
-    entity = map_notifications_order_to_entity(
+    # Создаём событие с полными данными заказа
+    event = OrderCreatedEvent.from_order(
         order=order,
-        user=user,
-        old_status=order.status,
-        support_topic=support_topic
-    )
-
-
-    celery.send_task(
-        "notifications.send_notification.order.admin",
-        args=[entity.to_payload()],
-        queue="notifications"
-    )
-    celery.send_task(
-        "notifications.send_notification.order.user",
-        args=[entity.to_payload()],
-        queue="notifications"
+        user_id=user_id
     )
     
+    # Записываем в outbox
+    await uow.outbox_writer.add_message(
+        event_type="order.created",
+        payload=event.to_payload()
+    )
+    
+    await uow.commit()
     return order
 
 
@@ -128,18 +115,16 @@ async def update_order_status(
     order_id: str,
     new_status: OrderStatus,
     comment: str | None,
-    uow: UoW,
-    celery: Celery
+    uow: UoW
 ) -> OrderEntity:
     """
-    Обновляет статус заказа и отправляет уведомление во внешний API.
+    Обновляет статус заказа и записывает событие в outbox.
 
     Args:
         order_id: ID заказа
         new_status: Новый статус заказа
         comment: Опциональный комментарий к изменению статуса
         uow: Unit of Work
-        celery: Celery client
 
     Returns:
         OrderEntity: Обновленная сущность заказа
@@ -159,30 +144,20 @@ async def update_order_status(
         order_id=order_id,
         new_status=new_status
     )
-    await uow.commit()
 
-    user = await uow.users_reader.get_by_id(order.user_id)
-    support_topic = await uow.support_topics_reader.get_by_user_telegram_id(
-        user.telegram_id
-    ) if user.telegram_id else None
-
-    entity = map_notifications_order_to_entity(
+    # Создаём событие с полными данными заказа
+    event = OrderStatusChangedEvent.from_order(
         order=order,
-        user=user,
+        user_id=order.user_id,
         old_status=old_status,
-        status_comment=comment,
-        support_topic=support_topic
+        status_comment=comment
+    )
+    
+    # Записываем в outbox
+    await uow.outbox_writer.add_message(
+        event_type="order.status_changed",
+        payload=event.to_payload()
     )
 
-    celery.send_task(
-        "notifications.send_notification.order.admin",
-        args=[entity.to_payload()],
-        queue="notifications"
-    )
-    celery.send_task(
-        "notifications.send_notification.order.user",
-        args=[entity.to_payload()],
-        queue="notifications"
-    )
-
+    await uow.commit()
     return order

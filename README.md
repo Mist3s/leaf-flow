@@ -30,6 +30,7 @@
 - [API Documentation](#-api-documentation)
 - [Структура проекта](#-структура-проекта)
 - [Модули и функциональность](#-модули-и-функциональность)
+- [Outbox Pattern](#-outbox-pattern)
 - [Разработка](#-разработка)
 - [Best Practices](#-best-practices)
 - [Contributing](#-contributing)
@@ -65,7 +66,8 @@
 - ⭐ **Отзывы** — агрегация отзывов с внешних платформ (Яндекс, Google, Telegram, Avito)
 
 ### Инфраструктура
-- 📨 **Уведомления** — фоновые задачи через Celery + Redis
+- 📨 **Уведомления** — Outbox Pattern + Celery + Redis для гарантированной доставки
+- 📤 **Outbox Pattern** — атомарность бизнес-операций и отправки событий
 - 🐳 **Docker** — полная контейнеризация с nginx reverse proxy
 - ⚙️ **Пул соединений** — настраиваемый пул подключений к PostgreSQL
 
@@ -152,10 +154,10 @@ graph TB
 | Слой               | Назначение                                        | Компоненты                                             |
 |--------------------|---------------------------------------------------|--------------------------------------------------------|
 | **API**            | HTTP endpoints, роутинг, валидация                | `auth`, `app`, `internal` роутеры и схемы              |
-| **Services**       | Бизнес-логика приложения                          | `auth_service`, `cart_service`, `order_service`, ...   |
+| **Services**       | Бизнес-логика приложения                          | `auth_service`, `cart_service`, `order_service`, `notification/` |
 | **Application**    | Порты (интерфейсы), DTO, исключения               | `ports/`, `dto/`, `auth/exceptions.py`                 |
-| **Infrastructure** | Реализация портов, БД, Redis, внешние интеграции  | UoW, Repositories, Celery, Telegram parser             |
-| **Domain**         | Доменные сущности, маппинг ORM → Entity           | `entities/`, `mappers/`                                |
+| **Infrastructure** | Реализация портов, БД, Redis, внешние интеграции  | UoW, Repositories, Outbox, Celery, Telegram parser     |
+| **Domain**         | Доменные сущности, события, маппинг ORM → Entity  | `entities/`, `events/`, `mappers/`                     |
 
 ### Ports & Adapters
 
@@ -311,6 +313,10 @@ REDIS_PORT=6379
 | `ADMIN_API_TOKEN`          | Токен для admin API                | –            | ✅          |
 | `REDIS_HOST`               | Хост Redis                         | –            | ✅          |
 | `REDIS_PORT`               | Порт Redis                         | –            | ✅          |
+| `OUTBOX_POLL_INTERVAL`     | Интервал опроса outbox (сек)       | `1.0`        | ❌          |
+| `OUTBOX_BATCH_SIZE`        | Размер пачки сообщений             | `100`        | ❌          |
+| `OUTBOX_MAX_ATTEMPTS`      | Макс. попыток обработки            | `5`          | ❌          |
+| `OUTBOX_LOG_LEVEL`         | Уровень логирования                | `INFO`       | ❌          |
 
 > **Важно:** Для Docker Compose используйте `DB_HOST=db-leaf-flow` и `REDIS_HOST=leaf-flow-redis`.
 
@@ -338,17 +344,24 @@ alembic upgrade head
 python -m leaf_flow
 ```
 
+4. Запустите Outbox Processor (в отдельном терминале):
+
+```bash
+python -m leaf_flow.outbox_worker
+```
+
 Приложение будет доступно по адресу: `http://localhost:8000`
 
 ### Запуск через Docker
 
 Полный стек включает:
 - **leaf-flow** — основное API-приложение
+- **leaf-flow-outbox-worker** — Outbox Processor (обработка событий)
 - **leaf-flow-bot** — Telegram бот
 - **leaf-flow-nginx** — фронтенд Telegram Mini App + API proxy
 - **leaf-flow-web-nginx** — фронтенд веб-сайта + API proxy
 - **leaf-flow-redis** — очередь задач
-- **leaf-flow-notifications-worker** — воркер уведомлений
+- **leaf-flow-notifications-worker** — воркер уведомлений (Celery)
 - **db-leaf-flow** — PostgreSQL
 
 ```bash
@@ -501,21 +514,28 @@ leaf-flow/
     │   │       ├── order.py  # OrderReaderRepository, OrderWriterRepository
     │   │       ├── user.py   # UserReaderRepository, UserWriterRepository
     │   │       └── ...
+    │   ├── outbox/           # Outbox Pattern
+    │   │   └── processor.py  # OutboxProcessor
     │   └── externals/
     │       ├── celery/
-    │       │   ├── celery_client.py
-    │       │   └── notification.py
+    │       │   └── celery_client.py
     │       └── telegram/
     │           └── parser.py # parse_telegram_init_data, parse_telegram_widget_data
     │
-    └── services/             # Сервисный слой (бизнес-логика)
-        ├── auth_service.py
-        ├── cart_service.py
-        ├── catalog_service.py
-        ├── order_service.py
-        ├── review_service.py
-        ├── security.py       # JWT, bcrypt, Telegram HMAC
-        └── support_topic_service.py
+    ├── services/             # Сервисный слой (бизнес-логика)
+    │   ├── auth_service.py
+    │   ├── cart_service.py
+    │   ├── catalog_service.py
+    │   ├── order_service.py
+    │   ├── review_service.py
+    │   ├── security.py       # JWT, bcrypt, Telegram HMAC
+    │   ├── support_topic_service.py
+    │   └── notification/     # Обработчики событий
+    │       ├── base.py       # EventHandler (ABC)
+    │       ├── factory.py    # EventHandlerFactory
+    │       └── order_handlers.py
+    │
+    └── outbox_worker.py      # Точка входа Outbox Processor
 ```
 
 ---
@@ -538,6 +558,7 @@ leaf-flow/
 | `Order` / `OrderItem`   | Заказы и их позиции                             |
 | `ExternalReview`        | Отзывы с внешних платформ                       |
 | `SupportTopic`          | Темы поддержки                                  |
+| `OutboxMessage`         | Сообщения для Outbox Pattern                    |
 
 ### Способы доставки
 
@@ -556,6 +577,92 @@ leaf-flow/
 | `paid`       | Оплачен               |
 | `fulfilled`  | Выполнен              |
 | `cancelled`  | Отменён               |
+
+---
+
+## 📤 Outbox Pattern
+
+Проект использует **Outbox Pattern** для гарантированной доставки событий.
+
+### Проблема
+
+При создании заказа нужно:
+1. Сохранить заказ в БД
+2. Отправить уведомление
+
+Если п.1 успешен, но п.2 упал — заказ создан, но уведомление потеряно.
+
+### Решение
+
+Записываем и заказ, и событие в **одну транзакцию**. Отдельный процесс (Outbox Processor) читает события и отправляет в Celery.
+
+```
+┌─────────────────────────────────────────┐     ┌─────────────────┐
+│            ОДНА ТРАНЗАКЦИЯ              │     │  Outbox Worker  │
+│  ┌─────────────────┐ ┌────────────────┐ │     │                 │
+│  │  INSERT order   │ │ INSERT outbox  │ │ ──► │  celery.send()  │
+│  └─────────────────┘ └────────────────┘ │     │                 │
+└─────────────────────────────────────────┘     └─────────────────┘
+```
+
+### Использование в сервисах
+
+```python
+from leaf_flow.domain.events import OrderCreatedEvent
+
+async def create_order(..., uow: UoW) -> OrderEntity:
+    order = await uow.orders_writer.create_order_with_items(...)
+    
+    # Создаём событие с данными заказа
+    event = OrderCreatedEvent.from_order(order=order, user_id=user_id)
+    
+    # Записываем в outbox (в той же транзакции!)
+    await uow.outbox_writer.add_message(
+        event_type="order.created",
+        payload=event.to_payload()
+    )
+    
+    await uow.commit()  # Атомарно: заказ + событие
+    return order
+```
+
+### Добавление нового обработчика
+
+1. **Создайте обработчик** в `services/notification/`:
+
+```python
+from leaf_flow.services.notification.base import EventHandler
+from leaf_flow.services.notification.factory import EventHandlerFactory
+
+class PaymentReceivedHandler(EventHandler):
+    async def handle(self, payload: dict) -> None:
+        user = await self._uow.users_reader.get_by_id(payload["user_id"])
+        # ... отправка уведомления ...
+
+# Регистрация
+EventHandlerFactory.register("payment.received", PaymentReceivedHandler)
+```
+
+2. **Добавьте тип события** в `infrastructure/db/models/outbox.py`:
+
+```python
+class OutboxEventType(str, PyEnum):
+    order_created = "order.created"
+    order_status_changed = "order.status_changed"
+    payment_received = "payment.received"  # NEW
+```
+
+3. **Импортируйте модуль** в `services/notification/__init__.py` для регистрации.
+
+### Запуск Outbox Processor
+
+```bash
+# Локально
+python -m leaf_flow.outbox_worker
+
+# Docker
+docker-compose up -d leaf-flow-outbox-worker-stage
+```
 
 ---
 
@@ -666,7 +773,8 @@ async def your_service_function(data: SomeDTO, uow: UoW) -> ResultDTO:
 - ✅ Избегайте прямой работы с ORM из слоя API — используйте сервисы
 
 ### Инфраструктура
-- ✅ Для фоновых задач используйте Celery через `celery_client`
+- ✅ Для фоновых задач используйте **Outbox Pattern** — запись события в БД в той же транзакции
+- ✅ Outbox Processor читает события и отправляет в Celery
 - ✅ Храните секреты в переменных окружения, не в коде
 - ✅ Используйте кастомные исключения (`InvalidInitData`, `InvalidWidgetData`)
 

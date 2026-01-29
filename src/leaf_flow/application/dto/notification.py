@@ -47,3 +47,46 @@ class NotificationsOrderEntity:
             "thread_id": self.thread_id,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M")
         }
+    
+    @classmethod
+    def from_outbox_payload(
+        cls,
+        payload: dict[str, Any],
+        telegram_id: int | None,
+        email: str | None,
+        admin_chat_id: int | None,
+        thread_id: int | None,
+        old_status: OrderStatus,
+        new_status: OrderStatus,
+        status_comment: str | None = None,
+    ) -> "NotificationsOrderEntity":
+        """
+        Создать entity из payload события outbox и данных пользователя.
+        
+        Args:
+            payload: Данные заказа из outbox (order_id, phone, customer_name, etc.)
+            telegram_id: Telegram ID пользователя
+            email: Email пользователя
+            admin_chat_id: ID чата администратора
+            thread_id: ID треда в чате
+            old_status: Старый статус заказа
+            new_status: Новый статус заказа
+            status_comment: Комментарий к изменению статуса
+        """
+        return cls(
+            order_id=payload["order_id"],
+            telegram_id=telegram_id,
+            old_status=old_status,
+            new_status=new_status,
+            comment=payload.get("comment"),
+            phone=payload["phone"],
+            customer_name=payload["customer_name"],
+            total=Decimal(payload["total"]),
+            delivery_method=payload["delivery"],
+            email=email,
+            address=payload.get("address"),
+            status_comment=status_comment,
+            admin_chat_id=admin_chat_id,
+            thread_id=thread_id,
+            created_at=datetime.fromisoformat(payload["created_at"])
+        )

@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int
 
+    # --- Outbox Processor ---
+    OUTBOX_POLL_INTERVAL: float = 1.0
+    OUTBOX_BATCH_SIZE: int = 100
+    OUTBOX_MAX_ATTEMPTS: int = 5
+    OUTBOX_LOG_LEVEL: str = "INFO"
+
     @property
     def database_url(self) -> str:
         return (

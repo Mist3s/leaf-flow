@@ -1,7 +1,6 @@
-from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 
-from leaf_flow.api.deps import uow_dep, require_internal_auth, get_celery
+from leaf_flow.api.deps import uow_dep, require_internal_auth
 from leaf_flow.api.v1.internal.schemas.order import (
     InternalOrderListResponse, InternalOrderListItem, UpdateOrderStatusRequest,
     InternalOrderDetails, InternalCartItem
@@ -83,10 +82,9 @@ async def update_order_status(
     payload: UpdateOrderStatusRequest = ...,
     _: None = Depends(require_internal_auth),
     uow: UoW = Depends(uow_dep),
-    celery: Celery = Depends(get_celery)
 ) -> InternalOrderDetails:
     """
-    Обновляет статус заказа и отправляет уведомление во внешний API.
+    Обновляет статус заказа и записывает событие в outbox.
     """
     try:
         new_status = OrderStatusEnum(payload.newStatus)
@@ -102,7 +100,6 @@ async def update_order_status(
             new_status=new_status,
             comment=payload.comment,
             uow=uow,
-            celery=celery
         )
     except ValueError as e:
         if str(e) == "ORDER_NOT_FOUND":

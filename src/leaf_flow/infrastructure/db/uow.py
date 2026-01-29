@@ -14,6 +14,9 @@ from leaf_flow.infrastructure.db.repositories.support_topic import (
     SupportTopicReaderRepository, SupportTopicWriterRepository
 )
 from leaf_flow.infrastructure.db.repositories.review import ExternalReviewReaderRepository
+from leaf_flow.infrastructure.db.repositories.outbox import (
+    OutboxReaderRepository, OutboxWriterRepository
+)
 from leaf_flow.application.ports.product import ProductsReader
 from leaf_flow.application.ports.cart import CartWriter, CartReader
 from leaf_flow.application.ports.category import CategoryReader
@@ -21,6 +24,7 @@ from leaf_flow.application.ports.review import ExternalReviewReader
 from leaf_flow.application.ports.auth import RefreshTokenReader, RefreshTokenWriter
 from leaf_flow.application.ports.user import UserReader, UserWriter
 from leaf_flow.application.ports.support_topic import SupportTopicReader, SupportTopicWriter
+from leaf_flow.application.ports.outbox import OutboxWriter, OutboxReader
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -36,6 +40,8 @@ class UoW:
     carts_reader: CartReader
     orders_writer: OrderWriter
     orders_reader: OrderReader
+    outbox_writer: OutboxWriter
+    outbox_reader: OutboxReader
     refresh_tokens_reader: RefreshTokenReader
     refresh_tokens_writer: RefreshTokenWriter
     support_topics_reader: SupportTopicReader
@@ -58,6 +64,8 @@ async def get_uow():
             carts_reader=CartReaderRepository(s),
             orders_writer=OrderWriterRepository(s),
             orders_reader=OrderReaderRepository(s),
+            outbox_writer=OutboxWriterRepository(s),
+            outbox_reader=OutboxReaderRepository(s),
             refresh_tokens_reader=RefreshTokenReaderRepository(s),
             refresh_tokens_writer=RefreshTokenWriterRepository(s),
             support_topics_reader=SupportTopicReaderRepository(s),

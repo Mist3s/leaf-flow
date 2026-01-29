@@ -1,7 +1,6 @@
-from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from leaf_flow.api.deps import get_current_user, uow_dep, get_celery
+from leaf_flow.api.deps import get_current_user, uow_dep
 from leaf_flow.api.v1.app.schemas.order import (
     OrderRequest, OrderSummary, OrderDetails,
     OrderListItem, OrderItemDetails
@@ -17,8 +16,7 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 async def create_order(
     payload: OrderRequest,
     user: UserEntity = Depends(get_current_user),
-    uow: UoW = Depends(uow_dep),
-    celery: Celery = Depends(get_celery)
+    uow: UoW = Depends(uow_dep)
 ) -> OrderSummary:
     try:
         delivery = payload.delivery
@@ -36,8 +34,7 @@ async def create_order(
             address=payload.address,
             comment=payload.comment,
             expected_total=payload.expectedTotal,
-            uow=uow,
-            celery=celery
+            uow=uow
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -54,7 +51,7 @@ async def list_orders(
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
     user: UserEntity = Depends(get_current_user),
-    uow: UoW = Depends(uow_dep),
+    uow: UoW = Depends(uow_dep)
 ) -> list[OrderListItem]:
     """Получение списка заказов текущего пользователя."""
     orders = await order_service.list_orders_for_user(user.id, limit, offset, uow)
