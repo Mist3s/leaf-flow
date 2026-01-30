@@ -125,10 +125,12 @@ graph LR
 
     subgraph Domain
         ENTITIES[Entities]
+        EVENTS[Events]
     end
 
     Routes --> SVC
     SVC --> DTO
+    SVC --> EVENTS
     SVC --> UOW
     SVC --> TELEGRAM
     UOW -.->|типизирован| PORTS
