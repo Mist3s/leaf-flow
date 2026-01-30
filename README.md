@@ -108,7 +108,7 @@ graph LR
     end
 
     subgraph Application
-        PORTS[Ports]
+        PORTS[Ports / Protocols]
         DTO[DTOs / Events]
     end
 
@@ -128,14 +128,15 @@ graph LR
     end
 
     Routes --> SVC
-    SVC --> UOW
     SVC --> DTO
+    SVC --> UOW
+    SVC --> TELEGRAM
+    UOW -.->|типизирован| PORTS
     UOW --> REPO
+    REPO -.->|реализует| PORTS
     REPO --> MODELS
-    MODELS --> DB
     REPO --> ENTITIES
-    SVC -.-> PORTS
-    PORTS -.-> REPO
+    MODELS --> DB
 
     OUTBOX --> UOW
     OUTBOX --> HANDLERS
@@ -143,8 +144,6 @@ graph LR
     HANDLERS --> DTO
     HANDLERS --> CELERY
     CELERY --> REDIS
-
-    SVC --> TELEGRAM
 ```
 
 ### Слои приложения
