@@ -99,12 +99,13 @@
 ```mermaid
 graph TB
     subgraph "API Layer"
-        A[FastAPI Routes] --> B[API Dependencies]
-        A1[Auth Routes] --> B
-        A2[Catalog Routes] --> B
-        A3[Cart Routes] --> B
-        A4[Orders Routes] --> B
-        A5[Internal Routes] --> B
+        A[FastAPI Routes]
+        A1[Auth Routes]
+        A2[Catalog Routes]
+        A3[Cart Routes]
+        A4[Orders Routes]
+        A5[Internal Routes]
+        A6[Review Routes]
     end
 
     subgraph "Service Layer"
@@ -113,40 +114,72 @@ graph TB
         C3[Cart Service]
         C4[Order Service]
         C5[Review Service]
+        C6[Notification Handlers]
     end
 
     subgraph "Application Layer"
         P1[Ports / Protocols]
         P2[DTOs]
-        P3[Auth Exceptions]
+        P3[Events]
+        P4[EventHandler / Factory]
     end
 
     subgraph "Infrastructure Layer"
-        D[Unit of Work] --> E[Repositories]
-        E --> F[SQLAlchemy Models]
+        D[Unit of Work]
+        E[Repositories]
+        F[SQLAlchemy Models]
         G[Database Session]
-        H[Redis Client]
-        I[Celery Client]
-        T[Telegram Parser]
+        OUT[Outbox Processor]
+        CEL[Celery Client]
+        TEL[Telegram Parser]
     end
 
     subgraph "Domain Layer"
         J[Entities]
-        K[Mappers]
+        K[Events]
+        M[Mappers]
     end
 
-    B --> C1
-    B --> C2
-    B --> C3
-    B --> C4
-    C1 --> P1
-    C2 --> P1
-    C3 --> P1
-    C4 --> P1
-    P1 -.-> E
-    E --> G
+    %% API -> Services
+    A1 --> C1
+    A2 --> C2
+    A3 --> C3
+    A4 --> C4
+    A5 --> C4
+    A6 --> C5
+
+    %% Services -> UoW
+    C1 --> D
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    %% Auth Service -> Telegram Parser
+    C1 --> TEL
+
+    %% UoW -> Repositories
+    D --> E
+    E --> F
     F --> G
-    C4 --> I
+
+    %% Order Service -> Outbox (через UoW)
+    C4 -.->|outbox_writer| D
+
+    %% Outbox Processor
+    OUT -->|читает| D
+    OUT -->|создаёт| C6
+    C6 -->|send_task| CEL
+
+    %% Notification Handlers -> UoW (подгрузка user)
+    C6 --> D
+
+    %% Services -> Ports
+    C1 -.-> P1
+    C2 -.-> P1
+    C3 -.-> P1
+    C4 -.-> P1
+    C5 -.-> P1
 ```
 
 ### Слои приложения
