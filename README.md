@@ -129,6 +129,7 @@ graph LR
 
     Routes --> SVC
     SVC --> UOW
+    SVC --> DTO
     UOW --> REPO
     REPO --> MODELS
     MODELS --> DB
@@ -136,10 +137,10 @@ graph LR
     SVC -.-> PORTS
     PORTS -.-> REPO
 
-    SVC -->|outbox_writer| UOW
-    OUTBOX -->|читает события| DB
+    OUTBOX --> UOW
     OUTBOX --> HANDLERS
     HANDLERS --> UOW
+    HANDLERS --> DTO
     HANDLERS --> CELERY
     CELERY --> REDIS
 
