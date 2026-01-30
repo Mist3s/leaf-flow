@@ -97,49 +97,56 @@
 Проект следует принципам **Hexagonal Architecture (Ports & Adapters)** и **Domain-Driven Design**.
 
 ```mermaid
-graph LR
-    subgraph API
+graph TB
+    subgraph "1. API Layer"
         Routes[FastAPI Routes]
     end
 
-    subgraph Services
-        SVC[Auth / Catalog / Cart / Order / Review]
+    subgraph "2. Service Layer"
+        SVC[Services]
         HANDLERS[Notification Handlers]
     end
 
-    subgraph Application
-        PORTS[Ports / Protocols]
-        DTO[DTOs / Events]
+    subgraph "3. Application Layer"
+        PORTS[Ports]
+        DTO[DTOs]
     end
 
-    subgraph Infrastructure
-        UOW[Unit of Work]
-        REPO[Repositories]
-        MODELS[SQLAlchemy Models]
-        DB[(PostgreSQL)]
-        OUTBOX[Outbox Processor]
-        CELERY[Celery]
-        REDIS[(Redis)]
-        TELEGRAM[Telegram Parser]
-    end
-
-    subgraph Domain
+    subgraph "4. Domain Layer"
         ENTITIES[Entities]
         EVENTS[Events]
     end
 
+    subgraph "5. Infrastructure Layer"
+        UOW[Unit of Work]
+        REPO[Repositories]
+        MODELS[Models]
+        OUTBOX[Outbox Processor]
+        TELEGRAM[Telegram Parser]
+    end
+
+    subgraph "6. External"
+        DB[(PostgreSQL)]
+        CELERY[Celery]
+        REDIS[(Redis)]
+    end
+
+    %% Основной поток запроса
     Routes --> SVC
-    SVC --> DTO
-    SVC --> EVENTS
     SVC --> UOW
-    SVC --> TELEGRAM
-    UOW -.->|типизирован| PORTS
     UOW --> REPO
-    REPO -.->|реализует| PORTS
     REPO --> MODELS
-    REPO --> ENTITIES
     MODELS --> DB
 
+    %% Зависимости от абстракций
+    SVC --> DTO
+    SVC --> EVENTS
+    SVC --> TELEGRAM
+    REPO --> ENTITIES
+    UOW -.-> PORTS
+    REPO -.-> PORTS
+
+    %% Outbox Pattern
     OUTBOX --> UOW
     OUTBOX --> HANDLERS
     HANDLERS --> UOW
