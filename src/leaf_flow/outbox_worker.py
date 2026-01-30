@@ -9,7 +9,10 @@ import logging
 
 from leaf_flow.config import settings
 from leaf_flow.infrastructure.outbox.processor import OutboxProcessor
-from leaf_flow.services.notification.order_handlers import EventHandlerFactory
+from leaf_flow.application.events.factory import EventHandlerFactory
+
+# Импорт для регистрации обработчиков
+import leaf_flow.services.notification  # noqa: F401
 
 
 def main() -> None:

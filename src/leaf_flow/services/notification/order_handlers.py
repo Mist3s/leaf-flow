@@ -7,8 +7,8 @@ import logging
 from abc import ABC
 from typing import Any
 
-from leaf_flow.services.notification.base import EventHandler
-from leaf_flow.services.notification.factory import EventHandlerFactory
+from leaf_flow.application.events.base import EventHandler
+from leaf_flow.application.events.factory import EventHandlerFactory
 from leaf_flow.infrastructure.externals.celery.celery_client import celery_client
 from leaf_flow.application.dto.notification import NotificationsOrderEntity
 

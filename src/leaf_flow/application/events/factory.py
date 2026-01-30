@@ -1,5 +1,5 @@
 """Фабрика обработчиков событий."""
-from leaf_flow.services.notification.base import EventHandler
+from leaf_flow.application.events.base import EventHandler
 from leaf_flow.infrastructure.db.uow import UoW
 
 

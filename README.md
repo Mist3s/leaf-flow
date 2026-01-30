@@ -481,11 +481,15 @@ leaf-flow/
     │   │   ├── auth.py       # AuthTokens
     │   │   ├── notification.py
     │   │   └── telegram.py   # TelegramUserData
+    │   ├── events/           # Инфраструктура событий
+    │   │   ├── base.py       # EventHandler (ABC)
+    │   │   └── factory.py    # EventHandlerFactory
     │   └── ports/            # Интерфейсы (Protocols)
     │       ├── auth.py       # RefreshTokenReader/Writer
     │       ├── cart.py       # CartReader/Writer
     │       ├── category.py   # CategoryReader
     │       ├── order.py      # OrderReader/Writer
+    │       ├── outbox.py     # OutboxWriter/Reader
     │       ├── product.py    # ProductsReader
     │       ├── review.py     # ExternalReviewReader
     │       ├── support_topic.py
@@ -530,10 +534,8 @@ leaf-flow/
     │   ├── review_service.py
     │   ├── security.py       # JWT, bcrypt, Telegram HMAC
     │   ├── support_topic_service.py
-    │   └── notification/     # Обработчики событий
-    │       ├── base.py       # EventHandler (ABC)
-    │       ├── factory.py    # EventHandlerFactory
-    │       └── order_handlers.py
+    │   └── notification/     # Обработчики уведомлений
+    │       └── order_handlers.py  # OrderCreatedHandler, OrderStatusChangedHandler
     │
     └── outbox_worker.py      # Точка входа Outbox Processor
 ```
