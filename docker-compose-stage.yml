@@ -1,6 +1,7 @@
 volumes:
   pg_data:
   static_data:
+  minio_data:
 
 services:
   db-leaf-flow-stage:
@@ -101,3 +102,21 @@ services:
       resources:
         limits:
           memory: 512M
+
+  minio-server-stage:
+    image: quay.io/minio/aistor/minio:latest
+    container_name: minio-server-stage
+    env_file: .env
+    command:
+      - minio
+      - server
+      - /mnt/data
+      - --license
+      - /minio.license
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/mnt/data
+      - ./.minio/minio.license:/minio.license:ro
+    restart: always
