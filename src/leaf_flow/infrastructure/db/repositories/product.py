@@ -80,7 +80,7 @@ class ProductRepository(Repository[Product], ProductsReader):
                     ProductAttributeValue.attribute
                 ),
                 selectinload(Product.brew_profiles),
-                selectinload(Product.images),
+                selectinload(Product.images).selectinload(ProductImage.variants),
 
                 with_loader_criteria(
                     ProductVariant,

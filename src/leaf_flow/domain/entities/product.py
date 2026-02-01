@@ -6,6 +6,19 @@ from typing import List, Literal
 
 AttributeKind = Literal["single", "multi", "bool", "range"]
 UIHint = Literal["chips", "radio", "toggle", "scale"]
+ImageVariant = Literal["original", "thumb", "md", "lg"]
+ImageFormat = Literal["jpg", "jpeg", "png", "webp"]
+
+@dataclass(slots=True)
+class ProductImageVariantEntity:
+    id: int
+    product_image_id: int
+    variant: ImageVariant
+    format: ImageFormat
+    storage_key: str
+    width: int
+    height: int
+    byte_size: int
 
 
 @dataclass(slots=True)
@@ -13,9 +26,11 @@ class ProductImageEntity:
     id: int
     product_id: str
     title: str
-    image_url: str
     is_active: bool
     sort_order: int
+    variants: List[ProductImageVariantEntity]
+    # устарело
+    image_url: str | None = None
 
 
 @dataclass(slots=True)

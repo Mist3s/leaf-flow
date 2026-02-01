@@ -28,6 +28,20 @@ class UIHint(str, enum.Enum):
     scale = "scale"
 
 
+class ImageVariant(str, enum.Enum):
+    original = "original"
+    thumb = "thumb"
+    md = "md"
+    lg = "lg"
+
+
+class ImageFormat(str, enum.Enum):
+    jpg = "jpg"
+    png = "png"
+    webp = "webp"
+    jpeg = "jpeg"
+
+
 class Category(Base):
     __tablename__ = "categories"
     slug: Mapped[str] = mapped_column(
@@ -426,8 +440,9 @@ class ProductImage(Base):
         String(258),
         nullable=False
     )
+    # поле устарело
     image_url: Mapped[str] = mapped_column(
-        String(1024), nullable=False
+        String(1024), nullable=True
     )
 
     sort_order: Mapped[int] = mapped_column(
@@ -440,6 +455,11 @@ class ProductImage(Base):
     product: Mapped["Product"] = relationship(
         back_populates="images"
     )
+    variants: Mapped[list["ProductImageVariant"]] = relationship(
+        back_populates="product_image",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     __table_args__ = (
         Index(
@@ -447,4 +467,38 @@ class ProductImage(Base):
             "product_id", "sort_order", "id",
             postgresql_where=(is_active.is_(True))
         ),
+    )
+
+
+class ProductImageVariant(Base):
+    __tablename__ = "product_image_variants"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_image_id: Mapped[int] = mapped_column(
+        ForeignKey("product_images.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    variant: Mapped[ImageVariant] = mapped_column(
+        Enum(ImageVariant, name="image_variant", native_enum=True),
+        nullable=False
+    )
+    format: Mapped[ImageFormat] = mapped_column(
+        Enum(ImageFormat, name="image_format", native_enum=True),
+        nullable=False
+    )
+    storage_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    width: Mapped[int] = mapped_column(Integer, nullable=False)
+    height: Mapped[int] = mapped_column(Integer, nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    product_image: Mapped["ProductImage"] = relationship(back_populates="variants")
+
+    __table_args__ = (
+        Index(
+            "ux_product_image_variant",
+            "product_image_id",
+            "variant",
+            "format",
+            unique=True
+        )
     )

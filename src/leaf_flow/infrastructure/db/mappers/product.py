@@ -7,18 +7,38 @@ from leaf_flow.domain.entities.product import (
     ProductAttributesEntity,
     ProductAttributesValueEntity,
     BrewProfileEntity,
-    ProductImageEntity
+    ProductImageEntity,
+    ProductImageVariantEntity
 )
 from leaf_flow.infrastructure.db.models.product import (
     Product as ProductModel,
     ProductVariant as ProductVariantModel,
     ProductAttributeValue as ProductAttributeValueModel,
-    ProductImage as ProductImageModel
+    ProductImage as ProductImageModel,
+    ProductImageVariant as ProductImageVariantModel
 )
 
 
+def map_product_image_variants_model_to_entity(
+    variants: list[ProductImageVariantModel]
+) -> list[ProductImageVariantEntity]:
+    return [
+        ProductImageVariantEntity(
+            id=variant.id,
+            product_image_id=variant.product_image_id,
+            variant=variant.variant.value,
+            format=variant.format.value,
+            storage_key=variant.storage_key,
+            width=variant.width,
+            height=variant.height,
+            byte_size=variant.byte_size
+        )
+        for variant in variants
+    ]
+
+
 def map_product_image_model_to_entity(
-        img: ProductImageModel
+    img: ProductImageModel
 ) -> ProductImageEntity:
     return ProductImageEntity(
         id=img.id,
@@ -27,6 +47,9 @@ def map_product_image_model_to_entity(
         image_url=img.image_url,
         is_active=img.is_active,
         sort_order=img.sort_order,
+        variants=map_product_image_variants_model_to_entity(
+            img.variants
+        )
     )
 
 

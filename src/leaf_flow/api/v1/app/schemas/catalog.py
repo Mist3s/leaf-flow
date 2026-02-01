@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 AttributeKind = Literal["single", "multi", "bool", "range"]
 UIHint = Literal["chips", "radio", "toggle", "scale"]
+ImageVariant = Literal["original", "thumb", "md", "lg"]
+ImageFormat = Literal["jpg", "jpeg", "png", "webp"]
 ProductCategory = str
 
 
@@ -63,15 +65,30 @@ class ProductAttributeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProductImageVariant(BaseModel):
+    id: int
+    product_image_id: int
+    variant: ImageVariant
+    format: ImageFormat
+    storage_key: str
+    width: int
+    height: int
+    byte_size: int
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 class ProductImage(BaseModel):
     id: int
     product_id: str
     title: str
-    image_url: str
     is_active: bool
     sort_order: int
+    variants: list[ProductImageVariant]
+    # Устарело
+    image_url: str | None = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class ProductDetail(BaseModel):
