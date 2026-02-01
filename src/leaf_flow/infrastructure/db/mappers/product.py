@@ -29,7 +29,7 @@ def map_product_image_variants_model_to_entity(
             product_image_id=variant.product_image_id,
             variant=variant.variant.value,
             format=variant.format.value,
-            storage_key=f'{settings.PUBLIC_IMAGE_BASE_URL}/{settings.PUBLIC_IMAGE_PREFIX}/{variant.storage_key}',
+            storage_key=f'{settings.PUBLIC_IMAGE_BASE_URL}/{variant.storage_key}',
             width=variant.width,
             height=variant.height,
             byte_size=variant.byte_size
