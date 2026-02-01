@@ -9,7 +9,7 @@ from leaf_flow.infrastructure.db.base import Base
 # Важно: импортируем модели, чтобы они зарегистрировались в Base.metadata
 from leaf_flow.infrastructure.db.models.user import User  # noqa: F401
 from leaf_flow.infrastructure.db.models.token import RefreshToken  # noqa: F401
-from leaf_flow.infrastructure.db.models.product import Product, Category, ProductVariant  # noqa: F401
+from leaf_flow.infrastructure.db.models.product import Product, Category, ProductVariant, ProductImageVariant, ProductImage  # noqa: F401
 from leaf_flow.infrastructure.db.models.order import Order, OrderStatusEnum, DeliveryMethodEnum, OrderItem  # noqa: F401
 from leaf_flow.infrastructure.db.models.cart import Cart, CartItem  # noqa: F401
 from leaf_flow.infrastructure.db.models.review import ExternalReview, PlatformEnum  # noqa: F401

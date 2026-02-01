@@ -500,5 +500,5 @@ class ProductImageVariant(Base):
             "variant",
             "format",
             unique=True
-        )
+        ),
     )
