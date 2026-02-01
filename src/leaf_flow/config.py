@@ -41,6 +41,16 @@ class Settings(BaseSettings):
     OUTBOX_MAX_ATTEMPTS: int = 5
     OUTBOX_LOG_LEVEL: str = "INFO"
 
+    # --- S3 ---
+    S3_ENDPOINT: str
+    S3_BUCKET: str
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
+    S3_REGION: str
+    S3_USE_SSL: bool
+    PUBLIC_IMAGE_BASE_URL: str
+    PUBLIC_IMAGE_PREFIX: str
+
     @property
     def database_url(self) -> str:
         return (
