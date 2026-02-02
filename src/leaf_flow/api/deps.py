@@ -3,10 +3,11 @@ from typing import Annotated, Optional
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from redis import Redis
 
+from leaf_flow.infrastructure.db.admin_uow import AdminUoW, get_admin_uow
 from leaf_flow.infrastructure.db.uow import UoW, get_uow
+from leaf_flow.infrastructure.externals.s3.storage import S3ObjectStorage
 from leaf_flow.services.security import decode_access_token
 from leaf_flow.domain.entities.user import UserEntity
-from leaf_flow.infrastructure.db.mappers.user import map_user_model_to_entity
 from leaf_flow.infrastructure.externals.celery.celery_client import celery_client
 from leaf_flow.config import settings
 
@@ -16,6 +17,14 @@ _admin_http_bearer = HTTPBearer(auto_error=False)
 
 def uow_dep(uow: UoW = Depends(get_uow)) -> UoW:
     return uow
+
+
+def admin_uow_dep(uow: AdminUoW = Depends(get_admin_uow)) -> AdminUoW:
+    return uow
+
+
+def get_object_storage() -> S3ObjectStorage:
+    return S3ObjectStorage()
 
 
 def get_redis(request: Request) -> Redis:

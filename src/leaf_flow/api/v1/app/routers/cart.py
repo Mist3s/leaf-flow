@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from leaf_flow.api.deps import get_current_user, uow_dep

@@ -20,22 +20,19 @@ from leaf_flow.infrastructure.db.models.product import (
 )
 
 
-def map_product_image_variants_model_to_entity(
-    variants: list[ProductImageVariantModel]
-) -> list[ProductImageVariantEntity]:
-    return [
-        ProductImageVariantEntity(
-            id=variant.id,
-            product_image_id=variant.product_image_id,
-            variant=variant.variant.value,
-            format=variant.format.value,
-            storage_key=f'{settings.PUBLIC_IMAGE_BASE_URL}/{variant.storage_key}',
-            width=variant.width,
-            height=variant.height,
-            byte_size=variant.byte_size
-        )
-        for variant in variants
-    ]
+def map_product_image_variant_model_to_entity(
+    variant: ProductImageVariantModel
+) -> ProductImageVariantEntity:
+    return ProductImageVariantEntity(
+        id=variant.id,
+        product_image_id=variant.product_image_id,
+        variant=variant.variant.value,
+        format=variant.format.value,
+        storage_key=f'{settings.PUBLIC_IMAGE_BASE_URL}/{variant.storage_key}',
+        width=variant.width,
+        height=variant.height,
+        byte_size=variant.byte_size
+    )
 
 
 def map_product_image_model_to_entity(
@@ -48,9 +45,10 @@ def map_product_image_model_to_entity(
         image_url=img.image_url,
         is_active=img.is_active,
         sort_order=img.sort_order,
-        variants=map_product_image_variants_model_to_entity(
-            img.variants
-        )
+        variants=[
+            map_product_image_variant_model_to_entity(variant)
+            for variant in img.variants
+        ]
     )
 
 
