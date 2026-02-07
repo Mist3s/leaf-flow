@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from leaf_flow.api.deps import admin_uow_dep, get_object_storage, require_admin_auth
-from leaf_flow.api.v1.admin.schemas.catalog import ProductImage
+from leaf_flow.api.v1.admin.schemas.image import ProductImage
 from leaf_flow.infrastructure.db.admin_uow import AdminUoW
 from leaf_flow.infrastructure.externals.s3.storage import S3ObjectStorage
 from leaf_flow.services.admin import images_service
 from leaf_flow.services.admin.images_service import ImageProcessingError
 
 
-router = APIRouter(prefix="/catalog")
+router = APIRouter(prefix="/admin/images", tags=["admin-images"])
 
 
-@router.post("/images", response_model=ProductImage, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProductImage, status_code=status.HTTP_201_CREATED)
 async def create_image(
     file: UploadFile,
     product_id: str,
@@ -40,7 +40,7 @@ async def create_image(
     return ProductImage.model_validate(image, from_attributes=True)
 
 
-@router.get("/images/{image_id}", response_model=ProductImage)
+@router.get("/{image_id}", response_model=ProductImage)
 async def get_image(
     image_id: int,
     _: None = Depends(require_admin_auth),
@@ -67,7 +67,7 @@ async def list_product_images(
     return [ProductImage.model_validate(img, from_attributes=True) for img in images]
 
 
-@router.delete("/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_image(
     image_id: int,
     _: None = Depends(require_admin_auth),

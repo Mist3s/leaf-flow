@@ -15,7 +15,12 @@ from leaf_flow.api.v1.app.routers.review import router as reviews_router
 from leaf_flow.api.v1.internal.routers.user import router as internal_users_router
 from leaf_flow.api.v1.internal.routers.order import router as internal_orders_router
 from leaf_flow.api.v1.internal.routers.support_topic import router as internal_support_topics_router
-from leaf_flow.api.v1.admin.routers.catalog import router as admin_catalog_router
+from leaf_flow.api.v1.admin.routers.image import router as admin_catalog_router
+from leaf_flow.api.v1.admin.routers.products import router as admin_products_router
+from leaf_flow.api.v1.admin.routers.categories import router as admin_categories_router
+from leaf_flow.api.v1.admin.routers.orders import router as admin_orders_router
+from leaf_flow.api.v1.admin.routers.reviews import router as admin_reviews_router
+from leaf_flow.api.v1.admin.routers.users import router as admin_users_router
 from leaf_flow.config import settings
 
 
@@ -70,10 +75,13 @@ def create_app() -> FastAPI:
     api_v1.include_router(internal_orders_router)
     api_v1.include_router(internal_support_topics_router)
 
-    admin = APIRouter(prefix="/admin", tags=["admin"])
-    admin.include_router(admin_catalog_router)
+    api_v1.include_router(admin_catalog_router)
+    api_v1.include_router(admin_products_router)
+    api_v1.include_router(admin_categories_router)
+    api_v1.include_router(admin_orders_router)
+    api_v1.include_router(admin_reviews_router)
+    api_v1.include_router(admin_users_router)
 
-    api_v1.include_router(admin)
     app.include_router(api_v1)
     return app
 

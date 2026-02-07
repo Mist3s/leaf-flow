@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -111,7 +111,6 @@ class ImageWriterRepository(Repository[ProductImage], ImageWriter):
         return map_product_image_variant_model_to_entity(image_variant)
 
     async def delete(self, image_id: int) -> None:
-        image = await self.session.get(ProductImage, image_id)
-        if image:
-            await self.session.delete(image)
-            await self.session.flush()
+        stmt = delete(ProductImage).where(ProductImage.id == image_id)
+        await self.session.execute(stmt)
+        await self.session.flush()
