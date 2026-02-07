@@ -36,6 +36,7 @@ class ProductImageEntity:
 @dataclass(slots=True)
 class ProductVariantEntity:
     id: str
+    product_id: str
     weight: str
     price: Decimal
     is_active: bool

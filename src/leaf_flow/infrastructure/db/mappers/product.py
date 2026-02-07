@@ -99,6 +99,7 @@ def map_product_variant_model_to_entity(
 ) -> ProductVariantEntity:
     return ProductVariantEntity(
         id=variant.id,
+        product_id=variant.product_id,
         weight=variant.weight,
         price=variant.price,
         is_active=variant.is_active,
