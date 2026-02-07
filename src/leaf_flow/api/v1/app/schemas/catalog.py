@@ -137,6 +137,7 @@ class Product(BaseModel):
     created_at: datetime
     updated_at: datetime
     sort_order: int
+    images: List[ProductImage]
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

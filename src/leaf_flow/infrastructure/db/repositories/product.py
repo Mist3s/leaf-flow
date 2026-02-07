@@ -35,11 +35,17 @@ class ProductRepository(Repository[Product], ProductsReader):
             .where(Product.is_active.is_(True))
             .options(
                 selectinload(Product.variants),
+                selectinload(Product.images).selectinload(ProductImage.variants),
                 with_loader_criteria(
                     ProductVariant,
                     ProductVariant.is_active.is_(True),
                     include_aliases=True
-                )
+                ),
+                with_loader_criteria(
+                    ProductImage,
+                    ProductImage.is_active.is_(True),
+                    include_aliases=True
+                ),
             )
         )
 

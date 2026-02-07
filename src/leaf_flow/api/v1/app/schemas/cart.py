@@ -3,6 +3,8 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 
+from leaf_flow.api.v1.app.schemas.catalog import ProductImage
+
 
 class CartItemInput(BaseModel):
     productId: str
@@ -19,6 +21,9 @@ class CartItem(BaseModel):
     image: str
     price: Decimal
     total: Decimal
+    images: List[ProductImage]
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class CartSchema(BaseModel):

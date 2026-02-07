@@ -2,11 +2,12 @@ from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import select, delete
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.cart import CartWriter, CartReader
 from leaf_flow.infrastructure.db.models.cart import Cart, CartItem
+from leaf_flow.infrastructure.db.models.product import ProductImage
 from leaf_flow.infrastructure.db.repositories.base import Repository
 from leaf_flow.domain.entities.cart import (
     CartDetailEntity,
@@ -25,12 +26,20 @@ class CartReaderRepository(Repository[Cart], CartReader):
         super().__init__(session, Cart)
 
     async def get_cart(self, cart_id: int) -> CartDetailEntity:
+        from leaf_flow.infrastructure.db.models.product import Product
         stmt = (
             select(CartItem)
             .where(CartItem.cart_id == cart_id)
             .options(
-                selectinload(CartItem.product),
+                selectinload(CartItem.product).selectinload(
+                    Product.images
+                ).selectinload(ProductImage.variants),
                 selectinload(CartItem.variant),
+                with_loader_criteria(
+                    ProductImage,
+                    ProductImage.is_active.is_(True),
+                    include_aliases=True
+                ),
             )
             .order_by(CartItem.id)
         )
@@ -43,13 +52,21 @@ class CartReaderRepository(Repository[Cart], CartReader):
         return map_cart_to_entities(cart) if cart is not None else None
 
     async def get_cart_items_by_user(self, user_id: int) -> CartDetailEntity:
+        from leaf_flow.infrastructure.db.models.product import Product
         stmt = (
             select(CartItem)
             .join(CartItem.cart)
             .where(Cart.user_id == user_id)
             .options(
-                selectinload(CartItem.product),
-                selectinload(CartItem.variant)
+                selectinload(CartItem.product).selectinload(
+                    Product.images
+                ).selectinload(ProductImage.variants),
+                selectinload(CartItem.variant),
+                with_loader_criteria(
+                    ProductImage,
+                    ProductImage.is_active.is_(True),
+                    include_aliases=True
+                ),
             )
             .order_by(CartItem.id)
         )
@@ -83,6 +100,7 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         quantity: int,
         price: Decimal
     ) -> CartItemEntity:
+        from leaf_flow.infrastructure.db.models.product import Product
         stmt = (
             select(CartItem)
             .where(
@@ -91,8 +109,15 @@ class CartWriterRepository(Repository[Cart], CartWriter):
                 CartItem.variant_id == variant_id,
             )
             .options(
-                selectinload(CartItem.product),
-                selectinload(CartItem.variant)
+                selectinload(CartItem.product).selectinload(
+                    Product.images
+                ).selectinload(ProductImage.variants),
+                selectinload(CartItem.variant),
+                with_loader_criteria(
+                    ProductImage,
+                    ProductImage.is_active.is_(True),
+                    include_aliases=True
+                ),
             )
             .order_by(CartItem.id)
         )
@@ -118,8 +143,15 @@ class CartWriterRepository(Repository[Cart], CartWriter):
                 select(CartItem)
                 .where(CartItem.id == item.id)
                 .options(
-                    selectinload(CartItem.product),
-                    selectinload(CartItem.variant)
+                    selectinload(CartItem.product).selectinload(
+                        Product.images
+                    ).selectinload(ProductImage.variants),
+                    selectinload(CartItem.variant),
+                    with_loader_criteria(
+                        ProductImage,
+                        ProductImage.is_active.is_(True),
+                        include_aliases=True
+                    ),
                 )
             )
         ).one()
@@ -151,6 +183,7 @@ class CartWriterRepository(Repository[Cart], CartWriter):
         variant_id: str,
         quantity: int
     ) -> CartItemEntity | None:
+        from leaf_flow.infrastructure.db.models.product import Product
         stmt = (
             select(CartItem)
             .where(
@@ -159,8 +192,15 @@ class CartWriterRepository(Repository[Cart], CartWriter):
                 CartItem.variant_id == variant_id
             )
             .options(
-                selectinload(CartItem.product),
-                selectinload(CartItem.variant)
+                selectinload(CartItem.product).selectinload(
+                    Product.images
+                ).selectinload(ProductImage.variants),
+                selectinload(CartItem.variant),
+                with_loader_criteria(
+                    ProductImage,
+                    ProductImage.is_active.is_(True),
+                    include_aliases=True
+                ),
             )
             .order_by(CartItem.id)
         )

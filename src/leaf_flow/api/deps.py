@@ -82,7 +82,7 @@ async def require_internal_auth(
     if not credentials or not credentials.scheme or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     token = credentials.credentials
-    if token != settings.INTERNAL_BOT_TOKEN:
+    if token != settings.INTERNAL_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
 

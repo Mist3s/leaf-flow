@@ -6,6 +6,7 @@ from leaf_flow.infrastructure.db.models import (
     CartItem as CartItemModel,
     Cart as CartModel
 )
+from leaf_flow.infrastructure.db.mappers.product import map_product_image_model_to_entity
 
 
 def _calc_totals(items: Sequence[CartItemEntity]) -> tuple[int, Decimal]:
@@ -22,6 +23,10 @@ def map_cart_items_to_entities(
 ) -> Sequence[CartItemEntity]:
     entities: list[CartItemEntity] = []
     for it in items:
+        images = [
+            map_product_image_model_to_entity(img)
+            for img in (it.product.images or [])
+        ]
         entities.append(
             CartItemEntity(
                 product_id=it.product_id,
@@ -30,7 +35,8 @@ def map_cart_items_to_entities(
                 price=it.price,
                 product_name=it.product.name,
                 variant_weight=it.variant.weight,
-                image=it.product.image
+                image=it.product.image,
+                images=images,
             )
         )
     return entities
@@ -39,7 +45,10 @@ def map_cart_items_to_entities(
 def map_cart_item_to_entities(
     item: CartItemModel
 ) -> CartItemEntity:
-
+    images = [
+        map_product_image_model_to_entity(img)
+        for img in (item.product.images or [])
+    ]
     return CartItemEntity(
         product_id=item.product_id,
         variant_id=item.variant_id,
@@ -47,7 +56,8 @@ def map_cart_item_to_entities(
         price=item.price,
         product_name=item.product.name,
         variant_weight=item.variant.weight,
-        image=item.product.image
+        image=item.product.image,
+        images=images,
     )
 
 

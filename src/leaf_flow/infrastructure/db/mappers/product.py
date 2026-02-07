@@ -182,6 +182,8 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
         key=lambda v: (v.sort_order, v.weight, v.id),
     )
 
+    images = [map_product_image_model_to_entity(i) for i in (product.images or [])]
+
     return ProductEntity(
         id=product.id,
         name=product.name,
@@ -193,5 +195,6 @@ def map_product_model_to_entity(product: ProductModel) -> ProductEntity:
         is_active=product.is_active,
         created_at=product.created_at,
         updated_at=product.updated_at,
-        sort_order=getattr(product, "sort_order", 0)
+        sort_order=getattr(product, "sort_order", 0),
+        images=images,
     )

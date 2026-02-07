@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import Sequence
+from typing import Sequence, List
+
+from leaf_flow.domain.entities.product import ProductImageEntity
 
 
 @dataclass(slots=True)
@@ -13,6 +15,7 @@ class CartItemEntity:
     product_name: str | None = None
     variant_weight: str | None = None
     image: str | None = None
+    images: List[ProductImageEntity] = field(default_factory=list)
 
     @property
     def total(self) -> Decimal:

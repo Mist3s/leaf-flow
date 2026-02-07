@@ -116,3 +116,4 @@ class ProductEntity:
     created_at: datetime
     updated_at: datetime
     sort_order: int
+    images: List[ProductImageEntity]
