@@ -37,6 +37,7 @@ from leaf_flow.application.ports.admin.variant import (
     AdminVariantWriter,
 )
 from leaf_flow.application.ports.image import ImageReader, ImageWriter
+from leaf_flow.application.ports.outbox import OutboxWriter
 from leaf_flow.infrastructure.db.repositories.admin import (
     AdminAttributeReaderRepository,
     AdminAttributeValueWriterRepository,
@@ -59,6 +60,7 @@ from leaf_flow.infrastructure.db.repositories.admin.image import (
     ImageReaderRepository,
     ImageWriterRepository,
 )
+from leaf_flow.infrastructure.db.repositories.outbox import OutboxWriterRepository
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -103,6 +105,9 @@ class AdminUoW:
     # Attributes
     attributes_reader: AdminAttributeReader
     attribute_values_writer: AdminAttributeValueWriter
+
+    # Outbox
+    outbox_writer: OutboxWriter
 
     async def flush(self) -> None:
         await self.session.flush()
@@ -149,6 +154,8 @@ async def get_admin_uow():
             # Attributes
             attributes_reader=AdminAttributeReaderRepository(s),
             attribute_values_writer=AdminAttributeValueWriterRepository(s),
+            # Outbox
+            outbox_writer=OutboxWriterRepository(s),
         )
         try:
             yield uow

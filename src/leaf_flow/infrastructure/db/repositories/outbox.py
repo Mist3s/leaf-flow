@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from leaf_flow.application.ports.outbox import OutboxWriter, OutboxReader
 from leaf_flow.domain.entities.outbox import OutboxMessageEntity
 from leaf_flow.infrastructure.db.mappers.outbox import map_outbox_massage_model_to_entity
-from leaf_flow.infrastructure.db.models.outbox import OutboxMessage
+from leaf_flow.infrastructure.db.models.outbox import OutboxMessage, OutboxEventType
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
@@ -29,8 +29,10 @@ class OutboxWriterRepository(Repository[OutboxMessage], OutboxWriter):
         Сообщение будет сохранено в той же транзакции,
         что и основная бизнес-операция.
         """
+        # Конвертируем строку в enum по значению
+        event_type_enum = OutboxEventType(event_type)
         message = OutboxMessage(
-            event_type=event_type,
+            event_type=event_type_enum,
             payload=payload,
             routing_key=routing_key
         )

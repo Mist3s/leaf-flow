@@ -10,6 +10,7 @@ from leaf_flow.infrastructure.db.base import Base
 class OutboxEventType(str, PyEnum):
     order_created = "order.created"
     order_status_changed = "order.status_changed"
+    image_uploaded = "image.uploaded"
 
 
 class OutboxMessage(Base):

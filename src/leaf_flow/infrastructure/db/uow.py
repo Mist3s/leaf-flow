@@ -25,6 +25,10 @@ from leaf_flow.application.ports.auth import RefreshTokenReader, RefreshTokenWri
 from leaf_flow.application.ports.user import UserReader, UserWriter
 from leaf_flow.application.ports.support_topic import SupportTopicReader, SupportTopicWriter
 from leaf_flow.application.ports.outbox import OutboxWriter, OutboxReader
+from leaf_flow.application.ports.image import ImageReader, ImageWriter
+from leaf_flow.infrastructure.db.repositories.admin.image import (
+    ImageReaderRepository, ImageWriterRepository
+)
 from leaf_flow.infrastructure.db.session import AsyncSessionLocal
 
 
@@ -47,6 +51,8 @@ class UoW:
     support_topics_reader: SupportTopicReader
     support_topics_writer: SupportTopicWriter
     external_reviews_reader: ExternalReviewReader
+    images_reader: ImageReader
+    images_writer: ImageWriter
     async def flush(self): await self.session.flush()
     async def commit(self): await self.session.commit()
     async def rollback(self): await self.session.rollback()
@@ -70,5 +76,7 @@ async def get_uow():
             refresh_tokens_writer=RefreshTokenWriterRepository(s),
             support_topics_reader=SupportTopicReaderRepository(s),
             support_topics_writer=SupportTopicWriterRepository(s),
-            external_reviews_reader=ExternalReviewReaderRepository(s)
+            external_reviews_reader=ExternalReviewReaderRepository(s),
+            images_reader=ImageReaderRepository(s),
+            images_writer=ImageWriterRepository(s),
         )

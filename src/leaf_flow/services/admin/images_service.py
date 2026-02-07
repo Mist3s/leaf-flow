@@ -5,7 +5,9 @@ from typing import IO, Sequence
 
 import imageio.v3 as imageio
 
+from leaf_flow.config import settings
 from leaf_flow.domain.entities.product import ProductImageEntity
+from leaf_flow.domain.events.image import ImageUploadedEvent
 from leaf_flow.infrastructure.db.admin_uow import AdminUoW
 from leaf_flow.infrastructure.externals.s3.storage import S3ObjectStorage
 
@@ -108,6 +110,22 @@ async def create_image(
             key=original_key,
             data=content,
             content_type=content_type or "application/octet-stream",
+        )
+
+        # Создаём событие для генерации вариантов изображения
+        original_url = f"{settings.PUBLIC_IMAGE_BASE_URL}/{original_key}"
+        event = ImageUploadedEvent(
+            image_id=image.id,
+            product_id=product_id,
+            original_url=original_url,
+            original_key=original_key,
+            original_format=ext,
+            original_width=width,
+            original_height=height,
+        )
+        await uow.outbox_writer.add_message(
+            event_type="image.uploaded",
+            payload=event.to_payload(),
         )
 
         await uow.commit()
