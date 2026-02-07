@@ -18,6 +18,8 @@ from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
 class ImageReaderRepository(Repository[ProductImage], ImageReader):
+    """Репозиторий для чтения изображений."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, ProductImage)
 
@@ -25,6 +27,7 @@ class ImageReaderRepository(Repository[ProductImage], ImageReader):
         self,
         image_id: int
     ) -> ProductImageEntity | None:
+        """Получить изображение по ID со всеми вариантами."""
         image = (
             await self.session.execute(
                 select(ProductImage)
@@ -48,11 +51,13 @@ class ImageReaderRepository(Repository[ProductImage], ImageReader):
         self,
         product_id: str,
     ) -> list[ProductImageEntity]:
+        """Получить все изображения продукта с сортировкой."""
         images = (
             await self.session.execute(
                 select(ProductImage)
                 .where(ProductImage.product_id == product_id)
                 .options(selectinload(ProductImage.variants))
+                .order_by(ProductImage.sort_order, ProductImage.id)
             )
         ).scalars().all()
 
@@ -60,6 +65,8 @@ class ImageReaderRepository(Repository[ProductImage], ImageReader):
 
 
 class ImageWriterRepository(Repository[ProductImage], ImageWriter):
+    """Репозиторий для записи изображений."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, ProductImage)
 

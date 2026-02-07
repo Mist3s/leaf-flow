@@ -115,9 +115,12 @@ class AdminUoW:
 
 
 async def get_admin_uow():
-    """Фабрика AdminUoW для FastAPI Depends."""
+    """Фабрика AdminUoW для FastAPI Depends.
+    
+    Автоматически откатывает транзакцию при возникновении исключения.
+    """
     async with AsyncSessionLocal() as s:
-        yield AdminUoW(
+        uow = AdminUoW(
             session=s,
             # Images
             images_reader=ImageReaderRepository(s),
@@ -147,3 +150,8 @@ async def get_admin_uow():
             attributes_reader=AdminAttributeReaderRepository(s),
             attribute_values_writer=AdminAttributeValueWriterRepository(s),
         )
+        try:
+            yield uow
+        except Exception:
+            await s.rollback()
+            raise

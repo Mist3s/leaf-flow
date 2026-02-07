@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from leaf_flow.application.ports.admin.review import AdminReviewReader, AdminReviewWriter
@@ -11,14 +11,14 @@ from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
 class AdminReviewReaderRepository(Repository[ExternalReview], AdminReviewReader):
+    """Репозиторий для чтения отзывов в админке."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, ExternalReview)
 
     async def get_by_id(self, review_id: int) -> ExternalReviewEntity | None:
-        stmt = (
-            select(ExternalReview)
-            .where(ExternalReview.id == review_id)
-        )
+        """Получить отзыв по ID."""
+        stmt = select(ExternalReview).where(ExternalReview.id == review_id)
         review = (await self.session.execute(stmt)).scalar_one_or_none()
 
         if not review:
@@ -26,14 +26,30 @@ class AdminReviewReaderRepository(Repository[ExternalReview], AdminReviewReader)
 
         return map_external_review_model_to_entity(review)
 
-    async def list_all(self) -> Sequence[ExternalReviewEntity]:
-        stmt = select(ExternalReview).order_by(ExternalReview.id.desc())
+    async def list_all(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[int, Sequence[ExternalReviewEntity]]:
+        """Получить список отзывов с пагинацией."""
+        count_stmt = select(func.count(ExternalReview.id))
+        total = (await self.session.execute(count_stmt)).scalar() or 0
+
+        stmt = (
+            select(ExternalReview)
+            .order_by(ExternalReview.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
         result = await self.session.execute(stmt)
         reviews = result.scalars().all()
-        return [map_external_review_model_to_entity(r) for r in reviews]
+
+        return total, [map_external_review_model_to_entity(r) for r in reviews]
 
 
 class AdminReviewWriterRepository(Repository[ExternalReview], AdminReviewWriter):
+    """Репозиторий для записи отзывов в админке."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, ExternalReview)
 

@@ -1,6 +1,6 @@
 """Роутеры для управления категориями в Admin API."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from leaf_flow.api.deps import admin_uow_dep, require_admin_auth
 from leaf_flow.api.v1.admin.schemas.category import (
@@ -80,8 +80,8 @@ async def delete_category(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> None:
     """Удалить категорию."""
-    if not uow.categories_reader.get_by_slug(slug):
-        raise HTTPException(status_code=404, detail="Категория не найдена")
+    if not await uow.categories_reader.get_by_slug(slug):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Категория не найдена")
 
     await uow.categories_writer.delete(slug)
     await uow.commit()

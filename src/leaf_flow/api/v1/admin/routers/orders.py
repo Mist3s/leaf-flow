@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from leaf_flow.api.deps import admin_uow_dep, require_admin_auth
 from leaf_flow.api.v1.admin.schemas.order import (
@@ -49,7 +49,7 @@ async def get_order(
     """Получить детали заказа."""
     order = await uow.orders_reader.get_by_id(order_id)
     if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
     return OrderDetail.model_validate(order, from_attributes=True)
 
 
@@ -64,12 +64,12 @@ async def update_order(
     fields = data.model_dump(exclude_none=True)
     order = await uow.orders_writer.update(order_id, **fields)
     if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
     await uow.commit()
     return OrderDetail.model_validate(order, from_attributes=True)
 
 
-@router.post("/{order_id}/status", response_model=OrderDetail)
+@router.patch("/{order_id}/status", response_model=OrderDetail)
 async def update_order_status(
     order_id: str,
     data: OrderStatusUpdate,
@@ -78,12 +78,12 @@ async def update_order_status(
 ) -> OrderDetail:
     """Изменить статус заказа."""
     if not await uow.orders_reader.get_by_id(order_id):
-        raise HTTPException(status_code=404, detail="Заказ не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
 
     order = await uow.orders_writer.update_status(order_id, data.status)
 
     if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
 
     await uow.commit()
     return OrderDetail.model_validate(order, from_attributes=True)
@@ -98,7 +98,7 @@ async def update_order_items(
 ) -> OrderDetail:
     """Изменить состав заказа."""
     if not await uow.orders_reader.get_by_id(order_id):
-        raise HTTPException(status_code=404, detail="Заказ не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
 
     payload = data.model_dump(exclude_none=True)
     items = payload["items"]
@@ -108,8 +108,6 @@ async def update_order_items(
     for item in items:
         item_total = item.get('price') * item.get('quantity')
         total += item_total
-
-    await uow.orders_writer.delete_items(order_id)
 
     order = await uow.orders_writer.update_items(order_id, items, total)
 

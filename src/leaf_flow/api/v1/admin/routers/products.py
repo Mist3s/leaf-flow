@@ -17,7 +17,9 @@ from leaf_flow.api.v1.admin.schemas.product import (
     ProductCreate,
     ProductDetail,
     ProductList,
-    ProductUpdate
+    ProductUpdate,
+    SuccessResponse,
+    SuccessWithAddedResponse,
 )
 from leaf_flow.api.v1.admin.schemas.variant import (
     VariantCreate,
@@ -74,6 +76,13 @@ async def create_product(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> ProductDetail:
     """Создать продукт."""
+    # Проверяем существование категории
+    if not await uow.categories_reader.get_by_slug(data.category_slug):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Категория '{data.category_slug}' не найдена"
+        )
+
     product = await uow.products_writer.create(
         id=data.id,
         name=data.name,
@@ -118,20 +127,20 @@ async def delete_product(
     await uow.commit()
 
 
-@router.post("/{product_id}/active", response_model=dict)
+@router.patch("/{product_id}/active", response_model=SuccessResponse)
 async def set_product_active(
     product_id: str,
     is_active: bool = Query(...),
     _: None = Depends(require_admin_auth),
     uow: AdminUoW = Depends(admin_uow_dep),
-) -> dict:
+) -> SuccessResponse:
     """Изменить активность продукта."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     await uow.products_writer.set_active(product_id, is_active)
     await uow.commit()
-    return {"success": True}
+    return SuccessResponse()
 
 
 @router.get("/{product_id}/variants", response_model=list[VariantDetail])
@@ -157,6 +166,9 @@ async def create_variant(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> VariantDetail:
     """Добавить вариант к продукту."""
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
+
     variant = await uow.variants_writer.create(
         id=data.id,
         product_id=product_id,
@@ -178,10 +190,14 @@ async def update_variant(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> VariantDetail:
     """Обновить вариант продукта."""
+    existing_variant = await uow.variants_reader.get_by_id(variant_id)
+    if not existing_variant or existing_variant.product_id != product_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Вариант не найден")
+
     fields = data.model_dump(exclude_none=True)
     variant = await uow.variants_writer.update(variant_id, **fields)
     if not variant:
-        raise HTTPException(status_code=404, detail="Вариант не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Вариант не найден")
     await uow.commit()
     return VariantDetail.model_validate(variant, from_attributes=True)
 
@@ -197,34 +213,36 @@ async def delete_variant(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> None:
     """Удалить вариант продукта."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
-    if not uow.variants_reader.get_by_id(variant_id):
-        raise HTTPException(status_code=404, detail="Вариант не найден")
+    variant = await uow.variants_reader.get_by_id(variant_id)
+    if not variant or variant.product_id != product_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Вариант не найден")
 
     await uow.variants_writer.delete(variant_id)
     await uow.commit()
 
 
-@router.post("/{product_id}/variants/{variant_id}/active", response_model=dict)
+@router.patch("/{product_id}/variants/{variant_id}/active", response_model=SuccessResponse)
 async def set_variant_active(
     product_id: str,
     variant_id: str,
     is_active: bool = Query(...),
     _: None = Depends(require_admin_auth),
     uow: AdminUoW = Depends(admin_uow_dep),
-) -> dict:
+) -> SuccessResponse:
     """Изменить активность варианта."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
-    if not uow.variants_reader.get_by_id(variant_id):
-        raise HTTPException(status_code=404, detail="Вариант не найден")
+    variant = await uow.variants_reader.get_by_id(variant_id)
+    if not variant or variant.product_id != product_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Вариант не найден")
 
     await uow.variants_writer.set_active(variant_id, is_active)
     await uow.commit()
-    return {"success": True}
+    return SuccessResponse()
 
 
 @router.get("/{product_id}/brew-profiles", response_model=list[BrewProfileDetail])
@@ -277,11 +295,11 @@ async def update_brew_profile(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> BrewProfileDetail:
     """Обновить профиль заваривания."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     if not await uow.brew_profiles_reader.get_by_id(profile_id):
-        raise HTTPException(status_code=404, detail="Профиль не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Профиль не найден")
 
     fields = data.model_dump(exclude_none=True)
 
@@ -302,52 +320,52 @@ async def delete_brew_profile(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> None:
     """Удалить профиль заваривания."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
-    if not uow.brew_profiles_reader.get_by_id(profile_id):
-        raise HTTPException(status_code=404, detail="Профиль не найден")
+    if not await uow.brew_profiles_reader.get_by_id(profile_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Профиль не найден")
 
     await uow.brew_profiles_writer.delete(profile_id)
     await uow.commit()
 
 
-@router.put("/{product_id}/attributes", response_model=dict)
+@router.put("/{product_id}/attributes", response_model=SuccessResponse)
 async def set_product_attribute_values(
     product_id: str,
     data: ProductAttributeValuesUpdate,
     _: None = Depends(require_admin_auth),
     uow: AdminUoW = Depends(admin_uow_dep),
-) -> dict:
+) -> SuccessResponse:
     """Установить значения атрибутов для продукта."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     await uow.attribute_values_writer.set_product_values(
         product_id=product_id,
         attribute_value_ids=data.attribute_value_ids,
     )
     await uow.commit()
-    return {"success": True}
+    return SuccessResponse()
 
 
-@router.post("/{product_id}/attributes/{attribute_value_id}", response_model=dict)
+@router.post("/{product_id}/attributes/{attribute_value_id}", response_model=SuccessWithAddedResponse)
 async def add_attribute_value_to_product(
     product_id: str,
     attribute_value_id: int,
     _: None = Depends(require_admin_auth),
     uow: AdminUoW = Depends(admin_uow_dep),
-) -> dict:
+) -> SuccessWithAddedResponse:
     """Добавить значение атрибута к продукту."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     added = await uow.attribute_values_writer.add_to_product(
         product_id=product_id,
         attribute_value_id=attribute_value_id,
     )
     await uow.commit()
-    return {"success": True, "added": added}
+    return SuccessWithAddedResponse(added=added)
 
 
 @router.delete(
@@ -361,8 +379,8 @@ async def remove_attribute_value_from_product(
     uow: AdminUoW = Depends(admin_uow_dep),
 ) -> None:
     """Удалить значение атрибута у продукта."""
-    if not uow.products_reader.get_by_id(product_id):
-        raise HTTPException(status_code=404, detail="Продукт не найден")
+    if not await uow.products_reader.get_by_id(product_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт не найден")
 
     await uow.attribute_values_writer.remove_from_product(
         product_id=product_id,

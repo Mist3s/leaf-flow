@@ -29,7 +29,12 @@ class ReviewCreate(BaseModel):
 
 class ReviewUpdate(BaseModel):
     platform: Platform | None = None
-    author: str | None = None
-    rating: float | None = None
-    text: str | None = None
-    date: str | None = None
+    author: str | None = Field(None, min_length=1, max_length=255)
+    rating: float | None = Field(None, ge=1, le=5)
+    text: str | None = Field(None, min_length=1, max_length=5000)
+    date: str | None = Field(None, min_length=1, max_length=50)
+
+
+class ReviewList(BaseModel):
+    total: int
+    items: list[ReviewDetail]

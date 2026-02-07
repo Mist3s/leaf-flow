@@ -1,6 +1,6 @@
 """Роутеры для управления пользователями в Admin API."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from leaf_flow.api.deps import admin_uow_dep, require_admin_auth
 from leaf_flow.api.v1.admin.schemas.user import (
@@ -43,7 +43,7 @@ async def get_user(
     """Получить пользователя по ID."""
     user = await uow.users_reader.get_by_id(user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     return UserDetail.model_validate(user, from_attributes=True)
 
 
@@ -58,6 +58,6 @@ async def update_user(
     fields = data.model_dump(exclude_none=True)
     user = await uow.users_writer.update(user_id, **fields)
     if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
     await uow.commit()
     return UserDetail.model_validate(user, from_attributes=True)

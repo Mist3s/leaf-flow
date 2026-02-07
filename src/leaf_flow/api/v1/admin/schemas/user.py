@@ -1,6 +1,6 @@
 """Схемы для пользователей в Admin API."""
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserDetail(BaseModel):
@@ -22,9 +22,9 @@ class UserList(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    first_name: str | None = None
-    last_name: str | None = None
-    username: str | None = None
-    email: str | None = None
-    language_code: str | None = None
-    photo_url: str | None = None
+    first_name: str | None = Field(None, min_length=1, max_length=100)
+    last_name: str | None = Field(None, max_length=100)
+    username: str | None = Field(None, max_length=100)
+    email: EmailStr | None = None
+    language_code: str | None = Field(None, max_length=10)
+    photo_url: str | None = Field(None, max_length=500)

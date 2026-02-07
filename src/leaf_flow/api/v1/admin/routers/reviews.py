@@ -1,11 +1,12 @@
 """Роутеры для управления отзывами в Admin API."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from leaf_flow.api.deps import admin_uow_dep, require_admin_auth
 from leaf_flow.api.v1.admin.schemas.review import (
     ReviewCreate,
     ReviewDetail,
+    ReviewList,
     ReviewUpdate,
 )
 from leaf_flow.infrastructure.db.admin_uow import AdminUoW
@@ -14,14 +15,19 @@ from leaf_flow.infrastructure.db.admin_uow import AdminUoW
 router = APIRouter(prefix="/admin/reviews", tags=["admin-reviews"])
 
 
-@router.get("", response_model=list[ReviewDetail])
+@router.get("", response_model=ReviewList)
 async def list_reviews(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     _: None = Depends(require_admin_auth),
     uow: AdminUoW = Depends(admin_uow_dep),
-) -> list[ReviewDetail]:
-    """Получить список всех отзывов."""
-    reviews = await uow.reviews_reader.list_all()
-    return [ReviewDetail.model_validate(r, from_attributes=True) for r in reviews]
+) -> ReviewList:
+    """Получить список отзывов с пагинацией."""
+    total, reviews = await uow.reviews_reader.list_all(limit=limit, offset=offset)
+    return ReviewList(
+        total=total,
+        items=[ReviewDetail.model_validate(r, from_attributes=True) for r in reviews],
+    )
 
 
 @router.get("/{review_id}", response_model=ReviewDetail)
@@ -34,7 +40,7 @@ async def get_review(
     review = await uow.reviews_reader.get_by_id(review_id)
 
     if not review:
-        raise HTTPException(status_code=404, detail="Отзыв не найден")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отзыв не найден")
 
     return ReviewDetail.model_validate(review, from_attributes=True)
 

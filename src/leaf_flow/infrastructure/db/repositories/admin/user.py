@@ -10,15 +10,23 @@ from leaf_flow.infrastructure.db.models.user import User
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
+def _escape_like(value: str) -> str:
+    """Экранирование спецсимволов для LIKE/ILIKE запросов."""
+    return value.replace(
+        "\\",
+        "\\\\"
+    ).replace("%", r"\%").replace("_", r"\_")
+
+
 class AdminUserReaderRepository(Repository[User], AdminUserReader):
+    """Репозиторий для чтения пользователей в админке."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, User)
 
     async def get_by_id(self, user_id: int) -> UserEntity | None:
-        stmt = (
-            select(User)
-            .where(User.id == user_id)
-        )
+        """Получить пользователя по ID."""
+        stmt = select(User).where(User.id == user_id)
         user = (await self.session.execute(stmt)).scalar_one_or_none()
 
         if not user:
@@ -32,15 +40,17 @@ class AdminUserReaderRepository(Repository[User], AdminUserReader):
         limit: int,
         offset: int,
     ) -> tuple[int, Sequence[UserEntity]]:
+        """Получить список пользователей с поиском и пагинацией."""
         stmt = select(User)
         count_stmt = select(func.count(User.id))
 
         if search:
+            escaped = _escape_like(search)
             search_filter = or_(
-                User.first_name.ilike(f"%{search}%"),
-                User.last_name.ilike(f"%{search}%"),
-                User.username.ilike(f"%{search}%"),
-                User.email.ilike(f"%{search}%"),
+                User.first_name.ilike(f"%{escaped}%", escape="\\"),
+                User.last_name.ilike(f"%{escaped}%", escape="\\"),
+                User.username.ilike(f"%{escaped}%", escape="\\"),
+                User.email.ilike(f"%{escaped}%", escape="\\"),
             )
             stmt = stmt.where(search_filter)
             count_stmt = count_stmt.where(search_filter)
@@ -55,10 +65,13 @@ class AdminUserReaderRepository(Repository[User], AdminUserReader):
 
 
 class AdminUserWriterRepository(Repository[User], AdminUserWriter):
+    """Репозиторий для записи пользователей в админке."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, User)
 
     async def update(self, user_id: int, **fields: object) -> UserEntity | None:
+        """Обновить поля пользователя."""
         allowed = set(User.__table__.columns.keys())
         values = {k: v for k, v in fields.items() if k in allowed}
 

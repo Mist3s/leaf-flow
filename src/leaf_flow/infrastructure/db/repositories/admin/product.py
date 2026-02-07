@@ -15,22 +15,35 @@ from leaf_flow.infrastructure.db.models.product import (
 from leaf_flow.infrastructure.db.repositories.base import Repository
 
 
+def _escape_like(value: str) -> str:
+    """Экранирование спецсимволов для LIKE/ILIKE запросов."""
+    return value.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+
+
 class AdminProductReaderRepository(Repository[Product], AdminProductReader):
+    """Репозиторий для чтения продуктов в админке."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, Product)
 
+    @staticmethod
+    def _product_load_options():
+        """Опции загрузки для Product со всеми связями."""
+        return [
+            selectinload(Product.variants),
+            selectinload(Product.brew_profiles),
+            selectinload(Product.images).selectinload(ProductImage.variants),
+            selectinload(Product.attribute_values).selectinload(
+                ProductAttributeValue.attribute
+            ),
+        ]
+
     async def get_by_id(self, product_id: str) -> ProductDetailEntity | None:
+        """Получить продукт по ID со всеми связями."""
         stmt = (
             select(Product)
             .where(Product.id == product_id)
-            .options(
-                selectinload(Product.variants),
-                selectinload(Product.brew_profiles),
-                selectinload(Product.images).selectinload(ProductImage.variants),
-                selectinload(Product.attribute_values).selectinload(
-                    ProductAttributeValue.attribute
-                ),
-            )
+            .options(*self._product_load_options())
         )
         result = await self.session.execute(stmt)
         product = result.scalar_one_or_none()
@@ -46,20 +59,15 @@ class AdminProductReaderRepository(Repository[Product], AdminProductReader):
         limit: int,
         offset: int,
     ) -> tuple[int, Sequence[ProductDetailEntity]]:
-        stmt = select(Product).options(
-            selectinload(Product.variants),
-            selectinload(Product.brew_profiles),
-            selectinload(Product.images).selectinload(ProductImage.variants),
-            selectinload(Product.attribute_values).selectinload(
-                ProductAttributeValue.attribute
-            ),
-        )
+        """Получить список продуктов с фильтрацией и пагинацией."""
+        stmt = select(Product).options(*self._product_load_options())
         count_stmt = select(func.count(Product.id))
 
         if search:
+            escaped = _escape_like(search)
             search_filter = or_(
-                Product.name.ilike(f"%{search}%"),
-                Product.id.ilike(f"%{search}%"),
+                Product.name.ilike(f"%{escaped}%", escape="\\"),
+                Product.id.ilike(f"%{escaped}%", escape="\\"),
             )
             stmt = stmt.where(search_filter)
             count_stmt = count_stmt.where(search_filter)
@@ -82,8 +90,32 @@ class AdminProductReaderRepository(Repository[Product], AdminProductReader):
 
 
 class AdminProductWriterRepository(Repository[Product], AdminProductWriter):
+    """Репозиторий для записи продуктов в админке."""
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, Product)
+
+    @staticmethod
+    def _product_load_options():
+        """Опции загрузки для Product со всеми связями."""
+        return [
+            selectinload(Product.variants),
+            selectinload(Product.brew_profiles),
+            selectinload(Product.images).selectinload(ProductImage.variants),
+            selectinload(Product.attribute_values).selectinload(
+                ProductAttributeValue.attribute
+            ),
+        ]
+
+    async def _get_product_with_relations(self, product_id: str) -> ProductDetailEntity:
+        """Получить продукт со всеми связями после изменения."""
+        stmt = (
+            select(Product)
+            .where(Product.id == product_id)
+            .options(*self._product_load_options())
+        )
+        result = await self.session.execute(stmt)
+        return map_product_detail_model_to_entity(result.scalar_one())
 
     async def create(
         self,
@@ -96,6 +128,7 @@ class AdminProductWriterRepository(Repository[Product], AdminProductWriter):
         tags: list[str],
         is_active: bool,
     ) -> ProductDetailEntity:
+        """Создать новый продукт."""
         product = Product(
             id=id,
             name=name,
@@ -132,43 +165,27 @@ class AdminProductWriterRepository(Repository[Product], AdminProductWriter):
         product_id: str,
         **fields: object,
     ) -> ProductDetailEntity | None:
+        """Обновить поля продукта."""
         allowed = set(Product.__table__.columns.keys())
         values = {k: v for k, v in fields.items() if k in allowed}
 
         if not values:
             return None
 
-        stmt = (
-            update(Product)
-            .where(Product.id == product_id)
-            .values(**values)
-            .returning(Product)
-        )
+        stmt = update(Product).where(Product.id == product_id).values(**values)
         await self.session.execute(stmt)
         await self.session.flush()
 
-        stmt = (
-            select(Product)
-            .where(Product.id == product_id)
-            .options(
-                selectinload(Product.variants),
-                selectinload(Product.brew_profiles),
-                selectinload(Product.images).selectinload(ProductImage.variants),
-                selectinload(Product.attribute_values).selectinload(
-                    ProductAttributeValue.attribute
-                ),
-            )
-        )
-        result = await self.session.execute(stmt)
-        updated = result.scalar_one()
-        return map_product_detail_model_to_entity(updated)
+        return await self._get_product_with_relations(product_id)
 
     async def delete(self, product_id: str) -> None:
+        """Удалить продукт."""
         stmt = delete(Product).where(Product.id == product_id)
         await self.session.execute(stmt)
         await self.session.flush()
 
     async def set_active(self, product_id: str, is_active: bool) -> None:
+        """Установить активность продукта."""
         stmt = (
             update(Product)
             .where(Product.id == product_id)

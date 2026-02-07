@@ -7,6 +7,19 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class SuccessResponse(BaseModel):
+    """Стандартный ответ для успешных операций."""
+
+    success: bool = True
+
+
+class SuccessWithAddedResponse(BaseModel):
+    """Ответ для операций добавления."""
+
+    success: bool = True
+    added: bool
+
+
 class VariantBrief(BaseModel):
     id: str
     weight: str
@@ -110,11 +123,11 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    category_slug: str | None = None
-    image: str | None = None
-    product_type_code: str | None = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=5000)
+    category_slug: str | None = Field(None, min_length=1, max_length=64)
+    image: str | None = Field(None, max_length=500)
+    product_type_code: str | None = Field(None, min_length=1, max_length=64)
     tags: list[str] | None = None
     is_active: bool | None = None
-    sort_order: int | None = None
+    sort_order: int | None = Field(None, ge=0)

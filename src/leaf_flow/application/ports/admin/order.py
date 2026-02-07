@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence
 
 from leaf_flow.domain.entities.order import OrderEntity
 
@@ -33,7 +33,7 @@ class AdminOrderWriter(Protocol):
     async def update_items(
         self,
         order_id: str,
-        items: list[dict[str, any]],
+        items: list[dict[str, Any]],
         total: Decimal
     ) -> OrderEntity: ...
 
