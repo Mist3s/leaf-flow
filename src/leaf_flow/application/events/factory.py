@@ -10,22 +10,22 @@ class EventHandlerFactory:
     Обработчики регистрируются при импорте модулей.
     """
     
-    _handlers: dict[str, type[EventHandler]] = {}
+    _handlers: dict[str, list[type[EventHandler]]] = {}
     
     @classmethod
-    def create(cls, event_type: str, uow: UoW) -> EventHandler | None:
+    def create_all(cls, event_type: str, uow: UoW) -> list[EventHandler]:
         """
-        Создать обработчик для указанного типа события.
+        Создать все зарегистрированные обработчики для указанного типа события.
         
         Args:
             event_type: Тип события (например, "order.created").
             uow: Unit of Work для работы с данными.
         
         Returns:
-            Экземпляр обработчика или None, если обработчик не найден.
+            Список экземпляров обработчиков (может быть пустым).
         """
-        handler_class = cls._handlers.get(event_type)
-        return handler_class(uow) if handler_class else None
+        handler_classes = cls._handlers.get(event_type, [])
+        return [handler_class(uow) for handler_class in handler_classes]
     
     @classmethod
     def register(cls, event_type: str, handler_class: type[EventHandler]) -> None:
@@ -36,7 +36,11 @@ class EventHandlerFactory:
             event_type: Тип события.
             handler_class: Класс обработчика.
         """
-        cls._handlers[event_type] = handler_class
+        if event_type not in cls._handlers:
+            cls._handlers[event_type] = []
+        
+        if handler_class not in cls._handlers[event_type]:
+            cls._handlers[event_type].append(handler_class)
     
     @classmethod
     def get_registered_events(cls) -> list[str]:

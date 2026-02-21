@@ -78,16 +78,18 @@ class OutboxProcessor:
         if hasattr(event_type, 'value'):
             event_type = event_type.value
         
-        handler = self._handler_factory.create(event_type, uow)
+        handlers = self._handler_factory.create_all(event_type, uow)
         
-        if not handler:
-            error = f"Unknown event_type: {event_type}"
+        if not handlers:
+            error = f"No handlers found for event_type: {event_type}"
             logger.error(f"{error}, message_id: {msg.id}")
             await uow.outbox_reader.mark_as_failed(msg.id, error)
             return False
         
         try:
-            await handler.handle(msg.payload)
+            for handler in handlers:
+                await handler.handle(msg.payload)
+                
             await uow.outbox_reader.mark_as_processed(msg.id)
             return True
             

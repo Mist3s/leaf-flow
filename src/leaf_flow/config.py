@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     # --- Redis ---
     REDIS_HOST: str
     REDIS_PORT: int
+    CHAT_REDIS_URL: str = "redis://localhost:6379/1"
+    LEAF_EVENTS_STREAM: str = "leaf.events"
 
     # --- Outbox Processor ---
     OUTBOX_POLL_INTERVAL: float = 1.0

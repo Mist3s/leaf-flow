@@ -13,6 +13,7 @@ from leaf_flow.application.events.factory import EventHandlerFactory
 
 # Импорт для регистрации обработчиков
 import leaf_flow.services.notification  # noqa: F401
+import leaf_flow.services.notification.chat_handlers  # noqa: F401
 
 
 def main() -> None:

@@ -25,6 +25,8 @@ def create_access_token(user_id: int, expires_in_seconds: Optional[int] = None) 
         "exp": int(expires_at.timestamp()),
         "iat": int(_utcnow().timestamp()),
         "type": "access",
+        "kind": "user",
+        "roles": []
     }
     token = jwt.encode(payload, key=settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return token, ttl
