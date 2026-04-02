@@ -10,6 +10,7 @@ from leaf_flow.api.v1.admin.schemas.order import (
     OrderStatusUpdate,
     OrderUpdate,
 )
+from leaf_flow.domain.events.order import OrderStatusChangedEvent
 from leaf_flow.infrastructure.db.admin_uow import AdminUoW
 
 
@@ -77,13 +78,34 @@ async def update_order_status(
     uow: AdminUoW = Depends(admin_uow_dep)
 ) -> OrderDetail:
     """Изменить статус заказа."""
-    if not await uow.orders_reader.get_by_id(order_id):
+    existing_order = await uow.orders_reader.get_by_id(order_id)
+    if not existing_order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
 
+    old_status = existing_order.status
     order = await uow.orders_writer.update_status(order_id, data.status)
 
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ не найден")
+
+    # Создаём событие с полными данными заказа
+    event = OrderStatusChangedEvent.from_order(
+        order=order,
+        user_id=order.user_id,
+        old_status=old_status,
+    )
+
+    # Записываем событие для уведомлений
+    await uow.outbox_writer.add_message(
+        event_type="order.status_changed",
+        payload=event.to_payload()
+    )
+
+    # Записываем событие для отправки в чат
+    await uow.outbox_writer.add_message(
+        event_type="chat.order.status_changed",
+        payload=event.to_payload()
+    )
 
     await uow.commit()
     return OrderDetail.model_validate(order, from_attributes=True)

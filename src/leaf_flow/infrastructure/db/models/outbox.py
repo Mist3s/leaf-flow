@@ -11,6 +11,8 @@ class OutboxEventType(str, PyEnum):
     order_created = "order.created"
     order_status_changed = "order.status_changed"
     image_uploaded = "image.uploaded"
+    chat_order_created = "chat.order.created"
+    chat_order_status_changed = "chat.order.status_changed"
 
 
 class OutboxMessage(Base):

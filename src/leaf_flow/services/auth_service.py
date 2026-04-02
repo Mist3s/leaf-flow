@@ -49,7 +49,7 @@ async def exchange_init_data_for_tokens(init_data: str, uow: UoW) -> tuple[AuthT
         )
 
     # Генерируем токены
-    access_token, access_ttl = create_access_token(user.id)
+    access_token, access_ttl = create_access_token(user.id, user.first_name)
     refresh_raw = generate_refresh_token()
     refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
     await uow.refresh_tokens_writer.create_refresh_token(
@@ -117,7 +117,7 @@ async def exchange_login_widget_for_tokens(
         )
     
     # Генерируем токены
-    access_token, access_ttl = create_access_token(user.id)
+    access_token, access_ttl = create_access_token(user.id, user.first_name)
     refresh_raw = generate_refresh_token()
     refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
     await uow.refresh_tokens_writer.create_refresh_token(
@@ -220,7 +220,7 @@ async def register_email_user(
     await uow.flush()
     
     # Генерация токенов (та же логика, что и для Telegram)
-    access_token, access_ttl = create_access_token(user.id)
+    access_token, access_ttl = create_access_token(user.id, user.first_name)
     refresh_raw = generate_refresh_token()
     refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
     await uow.refresh_tokens_writer.create_refresh_token(
@@ -267,7 +267,7 @@ async def authenticate_email_user(
         raise ValueError("INVALID_CREDENTIALS")
     
     # Генерация токенов (та же логика, что и для Telegram)
-    access_token, access_ttl = create_access_token(user.id)
+    access_token, access_ttl = create_access_token(user.id, user.first_name)
     refresh_raw = generate_refresh_token()
     refresh_expires_in = settings.REFRESH_TOKEN_TTL_SECONDS
     await uow.refresh_tokens_writer.create_refresh_token(
@@ -288,6 +288,7 @@ async def authenticate_email_user(
 
 async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
     refresh_token = await uow.refresh_tokens_reader.get_by_token(old_refresh_token)
+    user = await uow.users_reader.get_by_id(refresh_token.user_id)
 
     if not refresh_token or refresh_token.revoked or refresh_token.expires_at <= _utcnow():
         raise PermissionError("INVALID_REFRESH")
@@ -306,7 +307,7 @@ async def refresh_tokens(old_refresh_token: str, uow: UoW) -> AuthTokens:
         expires_at=_utcnow() + timedelta(seconds=settings.REFRESH_TOKEN_TTL_SECONDS)
     )
     await uow.commit()
-    access_token, access_ttl = create_access_token(refresh_token.user_id)
+    access_token, access_ttl = create_access_token(refresh_token.user_id, user.first_name)
 
     return AuthTokens(
         access_token=access_token,

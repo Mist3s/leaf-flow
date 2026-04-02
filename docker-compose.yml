@@ -3,6 +3,10 @@ volumes:
   static_data:
   minio_data:
 
+networks:
+  leaf-shared-network:
+    external: true
+
 services:
   db-leaf-flow:
     image: postgres:17
@@ -13,6 +17,8 @@ services:
     ports:
       - "5454:5432"
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow:
     image: mist3s/leaf-flow:prod
@@ -29,10 +35,14 @@ services:
       resources:
         limits:
           memory: 3G
+    networks:
+      - leaf-shared-network
 
   leaf-flow-bot:
     image: mist3s/leaf-flow-bot:prod
     container_name: leaf-flow-bot
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
     env_file: .env
     volumes:
@@ -45,6 +55,8 @@ services:
       resources:
         limits:
           memory: 3G
+    networks:
+      - leaf-shared-network
 
   leaf-flow-nginx:
     image: mist3s/leaf-flow-nginx:prod
@@ -57,6 +69,8 @@ services:
       - static_data:/app/static
     env_file: .env
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-web-nginx:
     image: mist3s/leaf-flow-web-nginx:prod
@@ -66,6 +80,8 @@ services:
     depends_on:
       - leaf-flow
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-redis:
     image: redis:7-alpine
@@ -77,11 +93,15 @@ services:
       timeout: 3s
       retries: 5
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-notifications-worker:
     image: mist3s/leaf-flow-notifications-worker:prod
     container_name: leaf-flow-notifications-worker
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file: .env
     depends_on:
       leaf-flow-redis:
@@ -90,13 +110,17 @@ services:
       resources:
         limits:
           memory: 512M
+    networks:
+      - leaf-shared-network
 
   leaf-flow-admin-nginx:
     image: mist3s/leaf-flow-admin-nginx:prod
     container_name: leaf-flow-admin-nginx
     ports:
-      - "5028:80"
+      - "5035:80"
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-outbox-worker:
     image: mist3s/leaf-flow:prod
@@ -111,6 +135,8 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - leaf-shared-network
 
   minio-server:
     image: quay.io/minio/aistor/minio:latest
@@ -129,3 +155,5 @@ services:
       - minio_data:/mnt/data
       - ./.minio/minio.license:/minio.license:ro
     restart: always
+    networks:
+      - leaf-shared-network

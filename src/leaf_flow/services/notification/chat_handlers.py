@@ -20,6 +20,7 @@ class ChatOrderCreatedHandler(EventHandler):
     async def handle(self, payload: dict[str, Any]) -> None:
         order_id = payload.get("order_id")
         user_id = payload.get("user_id")
+        user_name = payload.get("customer_name")
 
         if not order_id or not user_id:
             logger.warning("Missing order_id or user_id in payload for chat")
@@ -28,6 +29,7 @@ class ChatOrderCreatedHandler(EventHandler):
         chat_payload = {
             "user_id": user_id,
             "order_id": order_id,
+            "user_name": user_name,
         }
         await chat_event_publisher.publish("order.created", chat_payload)
 
@@ -39,6 +41,7 @@ class ChatOrderStatusChangedHandler(EventHandler):
         order_id = payload.get("order_id")
         status = payload.get("new_status", payload.get("status"))
         old_status = payload.get("old_status")
+        user_name = payload.get("customer_name")
 
         if not order_id or not status:
             logger.warning("Missing order_id or status in payload for chat")
@@ -47,6 +50,7 @@ class ChatOrderStatusChangedHandler(EventHandler):
         chat_payload = {
             "order_id": order_id,
             "status": status,
+            "user_name": user_name,
         }
         if old_status:
             chat_payload["old_status"] = old_status
@@ -55,5 +59,5 @@ class ChatOrderStatusChangedHandler(EventHandler):
 
 
 # Регистрация обработчиков
-EventHandlerFactory.register("order.created", ChatOrderCreatedHandler)
-EventHandlerFactory.register("order.status_changed", ChatOrderStatusChangedHandler)
+EventHandlerFactory.register("chat.order.created", ChatOrderCreatedHandler)
+EventHandlerFactory.register("chat.order.status_changed", ChatOrderStatusChangedHandler)

@@ -17,7 +17,11 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_access_token(user_id: int, expires_in_seconds: Optional[int] = None) -> tuple[str, int]:
+def create_access_token(
+    user_id: int,
+    name: str,
+    expires_in_seconds: Optional[int] = None
+) -> tuple[str, int]:
     ttl = expires_in_seconds or settings.ACCESS_TOKEN_TTL_SECONDS
     expires_at = _utcnow() + timedelta(seconds=ttl)
     payload = {
@@ -26,7 +30,8 @@ def create_access_token(user_id: int, expires_in_seconds: Optional[int] = None) 
         "iat": int(_utcnow().timestamp()),
         "type": "access",
         "kind": "user",
-        "roles": []
+        "roles": [],
+        "name": name
     }
     token = jwt.encode(payload, key=settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return token, ttl

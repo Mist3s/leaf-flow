@@ -3,6 +3,10 @@ volumes:
   static_data:
   minio_data:
 
+networks:
+  leaf-shared-network:
+    external: true
+
 services:
   db-leaf-flow-stage:
     image: postgres:17
@@ -13,6 +17,8 @@ services:
     ports:
       - "5455:5432"
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-stage:
     image: mist3s/leaf-flow:stage
@@ -29,6 +35,8 @@ services:
       resources:
         limits:
           memory: 1G
+    networks:
+      - leaf-shared-network
 
   leaf-flow-bot-stage:
     image: mist3s/leaf-flow-bot:stage
@@ -45,6 +53,8 @@ services:
       resources:
         limits:
           memory: 1G
+    networks:
+      - leaf-shared-network
 
   leaf-flow-nginx-stage:
     image: mist3s/leaf-flow-nginx:stage
@@ -57,6 +67,8 @@ services:
       - static_data:/app/static
     env_file: .env
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-web-nginx-stage:
     image: mist3s/leaf-flow-web-nginx:stage
@@ -64,17 +76,21 @@ services:
     ports:
       - "5026:80"
     restart: always
+    networks:
+      - leaf-shared-network
 
   leaf-flow-admin-nginx-stage:
     image: mist3s/leaf-flow-admin-nginx:stage
     container_name: leaf-flow-admin-nginx-stage
     ports:
-      - "5027:80"
+      - "5028:80"
     restart: always
+    networks:
+      - leaf-shared-network
 
-  leaf-flow-redis-stage:
+  redis:
     image: redis:7-alpine
-    container_name: leaf-flow-redis-stage
+    container_name: delivery_geo_redis
     command: [ "redis-server", "--save", "", "--appendonly", "no" ]
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
@@ -82,6 +98,23 @@ services:
       timeout: 3s
       retries: 5
     restart: always
+    networks:
+      - leaf-shared-network
+
+  leaf-flow-notifications-worker-stage:
+    image: mist3s/leaf-flow-notifications-worker:stage
+    container_name: leaf-flow-notifications-worker-stage
+    restart: always
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - leaf-shared-network
 
   leaf-flow-outbox-worker-stage:
     image: mist3s/leaf-flow:stage
@@ -91,24 +124,12 @@ services:
     command: ["python", "-m", "leaf_flow.outbox_worker"]
     depends_on:
       - db-leaf-flow-stage
-      - leaf-flow-redis-stage
+    networks:
+      - leaf-shared-network
     deploy:
       resources:
         limits:
           memory: 256M
-
-  leaf-flow-notifications-worker-stage:
-    image: mist3s/leaf-flow-notifications-worker:stage
-    container_name: leaf-flow-notifications-worker-stage
-    restart: always
-    env_file: .env
-    depends_on:
-      leaf-flow-redis-stage:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 512M
 
   minio-server-stage:
     image: quay.io/minio/aistor/minio:latest
@@ -127,3 +148,5 @@ services:
       - minio_data:/mnt/data
       - ./.minio/minio.license:/minio.license:ro
     restart: always
+    networks:
+      - leaf-shared-network

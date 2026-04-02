@@ -29,10 +29,9 @@ from leaf_flow.config import settings
 async def lifespan(app: FastAPI):
     redis: Redis | None = None
     try:
-        redis = Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=0,
+        redis = Redis.from_url(
+            settings.REDIS_URL,
+            encoding="utf8",
             socket_timeout=5,
             socket_connect_timeout=5,
             health_check_interval=30,

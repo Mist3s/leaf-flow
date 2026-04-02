@@ -78,9 +78,15 @@ async def create_order(
         user_id=user_id
     )
     
-    # Записываем в outbox
+    # Записываем событие для уведомлений
     await uow.outbox_writer.add_message(
         event_type="order.created",
+        payload=event.to_payload()
+    )
+
+    # Записываем событие для отправки в чат
+    await uow.outbox_writer.add_message(
+        event_type="chat.order.created",
         payload=event.to_payload()
     )
     
@@ -153,9 +159,15 @@ async def update_order_status(
         status_comment=comment
     )
     
-    # Записываем в outbox
+    # Записываем событие для уведомлений
     await uow.outbox_writer.add_message(
         event_type="order.status_changed",
+        payload=event.to_payload()
+    )
+
+    # Записываем событие для отправки в чат
+    await uow.outbox_writer.add_message(
+        event_type="chat.order.status_changed",
         payload=event.to_payload()
     )
 

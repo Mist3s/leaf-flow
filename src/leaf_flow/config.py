@@ -31,8 +31,7 @@ class Settings(BaseSettings):
     IMAGES_BASE_URL: str = "/images"
 
     # --- Redis ---
-    REDIS_HOST: str
-    REDIS_PORT: int
+    REDIS_URL: str = "redis://localhost:6379/1"
     CHAT_REDIS_URL: str = "redis://localhost:6379/1"
     LEAF_EVENTS_STREAM: str = "leaf.events"
 
